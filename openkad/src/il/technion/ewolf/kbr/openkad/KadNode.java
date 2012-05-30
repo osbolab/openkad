@@ -19,11 +19,11 @@ public class KadNode {
 
 	private final AtomicLong lastContactTimestamp = new AtomicLong(0);
 	private final AtomicBoolean beingPinged = new AtomicBoolean(false);
-	private Node node;
+	protected Node node;
 	
 	
 	@Inject
-	KadNode() {
+	protected KadNode() {
 	}
 	
 	@Override
