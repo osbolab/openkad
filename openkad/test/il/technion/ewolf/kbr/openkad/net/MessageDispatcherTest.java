@@ -28,8 +28,9 @@ public class MessageDispatcherTest {
 
 	private BlockingQueue<MessageDispatcher<?>> mockedOutstandingRequests;
 	private Set<MessageDispatcher<?>> mockedExpecters;
+	private Set<MessageDispatcher<?>> mockedNonConsumableExpecters;
 	private Timer mockedTimer;
-	private KadServer mockedKadServer;
+	private Communicator mockedKadServer;
 	private Node mockedNode;
 	private KadRequest mockedRequest;
 	private long timeout;
@@ -39,8 +40,9 @@ public class MessageDispatcherTest {
 	public void setup() {
 		mockedOutstandingRequests = spy(new ArrayBlockingQueue<MessageDispatcher<?>>(10));
 		mockedExpecters = spy(new HashSet<MessageDispatcher<?>>());
+		mockedNonConsumableExpecters = spy(new HashSet<MessageDispatcher<?>>());
 		mockedTimer = spy(new Timer());
-		mockedKadServer = mock(KadServer.class);
+		mockedKadServer = mock(Communicator.class);
 		mockedNode = mock(Node.class);
 		mockedRequest = mock(KadRequest.class);
 		timeout = 100;
@@ -48,6 +50,7 @@ public class MessageDispatcherTest {
 		dispatcher = new MessageDispatcher<Object>(
 				mockedOutstandingRequests,
 				mockedExpecters,
+				mockedNonConsumableExpecters,
 				mockedTimer,
 				timeout,
 				mockedKadServer);
@@ -90,6 +93,7 @@ public class MessageDispatcherTest {
 		
 		verify(mockedOutstandingRequests, never()).put(dispatcher);
 		verify(mockedExpecters, never()).remove(dispatcher);
+		verify(mockedNonConsumableExpecters, never()).remove(dispatcher);
 	}
 	
 	@Test

@@ -6,7 +6,7 @@ import il.technion.ewolf.kbr.Key;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeRequest;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;

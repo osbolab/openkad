@@ -6,7 +6,7 @@ import il.technion.ewolf.kbr.Key;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeRequest;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
@@ -30,7 +30,7 @@ import com.google.inject.name.Named;
  * @author eyal.kibbar@gmail.com
  *
  */
-public class KadFindValueOperation extends FindValueOperation implements CompletionHandler<KadMessage, Node> {
+public class KadLocalCacheFindValueOperation extends FindValueOperation implements CompletionHandler<KadMessage, Node> {
 
 	// state
 	private List<Node> knownClosestNodes;
@@ -50,7 +50,7 @@ public class KadFindValueOperation extends FindValueOperation implements Complet
 	private final KadCache cache;
 	
 	@Inject
-	KadFindValueOperation(
+	KadLocalCacheFindValueOperation(
 			@Named("openkad.local.node") Node localNode,
 			@Named("openkad.bucket.kbuckets.maxsize") int kBucketSize,
 			Provider<FindNodeRequest> findNodeRequestProvider,
@@ -68,7 +68,7 @@ public class KadFindValueOperation extends FindValueOperation implements Complet
 		querying = new HashSet<Node>();
 	}
 	
-	public KadFindValueOperation setKey(Key key) {
+	public KadLocalCacheFindValueOperation setKey(Key key) {
 		this.key = key;
 		return this;
 	}
@@ -77,7 +77,7 @@ public class KadFindValueOperation extends FindValueOperation implements Complet
 		return nrQueried;
 	}
 	
-	public KadFindValueOperation setBootstrap(Collection<Node> bootstrap) {
+	public KadLocalCacheFindValueOperation setBootstrap(Collection<Node> bootstrap) {
 		this.bootstrap = bootstrap;
 		return this;
 	}

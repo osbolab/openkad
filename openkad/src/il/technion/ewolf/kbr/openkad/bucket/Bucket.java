@@ -1,6 +1,7 @@
-package il.technion.ewolf.kbr.openkad;
+package il.technion.ewolf.kbr.openkad.bucket;
 
 import il.technion.ewolf.kbr.Node;
+import il.technion.ewolf.kbr.openkad.KadNode;
 
 import java.util.Collection;
 
@@ -10,7 +11,7 @@ import java.util.Collection;
  * @author eyal.kibbar@gmail.com
  *
  */
-interface Bucket {
+public interface Bucket {
 
 	/**
 	 * Adds a new node to the bucket

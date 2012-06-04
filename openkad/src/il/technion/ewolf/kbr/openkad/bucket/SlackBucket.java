@@ -1,6 +1,7 @@
-package il.technion.ewolf.kbr.openkad;
+package il.technion.ewolf.kbr.openkad.bucket;
 
 import il.technion.ewolf.kbr.Node;
+import il.technion.ewolf.kbr.openkad.KadNode;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -23,7 +24,7 @@ public class SlackBucket implements Bucket {
 	private final int maxSize;
 	
 	@Inject
-	SlackBucket(int maxSize) {
+	public SlackBucket(int maxSize) {
 		this.maxSize = maxSize;
 		bucket = new LinkedList<KadNode>();
 	}

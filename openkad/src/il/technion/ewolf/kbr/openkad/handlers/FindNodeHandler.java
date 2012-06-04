@@ -1,16 +1,17 @@
 package il.technion.ewolf.kbr.openkad.handlers;
 
 import il.technion.ewolf.kbr.Node;
-import il.technion.ewolf.kbr.openkad.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeRequest;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
-import il.technion.ewolf.kbr.openkad.net.KadServer;
+import il.technion.ewolf.kbr.openkad.net.Communicator;
 import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.net.filter.MessageFilter;
 import il.technion.ewolf.kbr.openkad.net.filter.TypeMessageFilter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,7 +30,7 @@ import com.google.inject.name.Named;
  */
 public class FindNodeHandler extends AbstractHandler {
 
-	private final KadServer kadServer;
+	private final Communicator kadServer;
 	private final Node localNode;
 	private final KadCache cache;
 	private final KBuckets kBuckets;
@@ -42,7 +43,7 @@ public class FindNodeHandler extends AbstractHandler {
 	@Inject
 	FindNodeHandler(
 			Provider<MessageDispatcher<Void>> msgDispatcherProvider,
-			KadServer kadServer,
+			Communicator kadServer,
 			@Named("openkad.local.node") Node localNode,
 			KadCache cache,
 			KBuckets kBuckets,
@@ -64,36 +65,39 @@ public class FindNodeHandler extends AbstractHandler {
 
 	@Override
 	public void completed(KadMessage msg, Void attachment) {
-		try {
-			FindNodeRequest findNodeRequest = ((FindNodeRequest)msg);
-			FindNodeResponse findNodeResponse = findNodeRequest
-					.generateResponse(localNode)
-					.setCachedResults(false);
+		
+		FindNodeRequest findNodeRequest = ((FindNodeRequest)msg);
+		FindNodeResponse findNodeResponse = findNodeRequest
+				.generateResponse(localNode)
+				.setCachedResults(false);
+		
+		List<Node> cachedResults = null;
+		
+		if (!findNodeRequest.shouldSearchCache()) {
+			findNodeResponse.setNodes(kBuckets.getClosestNodesByKey(
+					findNodeRequest.getKey(), kBucketSize));
 			
-			List<Node> cachedResults = null;
+		} else {
+			 // requester ask to search in cache
+			cachedResults = cache.search(findNodeRequest.getKey());
 			
-			if (!findNodeRequest.shouldSearchCache()) {
+			if (cachedResults == null) {
+				nrFindnodeMiss.incrementAndGet();
 				findNodeResponse.setNodes(kBuckets.getClosestNodesByKey(
 						findNodeRequest.getKey(), kBucketSize));
-				
 			} else {
-				 // requester ask to search in cache
-				cachedResults = cache.search(findNodeRequest.getKey());
-				
-				if (cachedResults == null) {
-					nrFindnodeMiss.incrementAndGet();
-					findNodeResponse.setNodes(kBuckets.getClosestNodesByKey(
-							findNodeRequest.getKey(), kBucketSize));
-				} else {
-					nrFindnodeHits.incrementAndGet();
-					findNodeResponse
-						.setNodes(new ArrayList<Node>(cachedResults))
-						.setCachedResults(true);
-						
-				}
+				nrFindnodeHits.incrementAndGet();
+				findNodeResponse
+					.setNodes(new ArrayList<Node>(cachedResults))
+					.setCachedResults(true);
+					
 			}
+		}
+		
+		try {
 			kadServer.send(msg.getSrc(), findNodeResponse);
-		} catch (Exception e) {
+		} catch (IOException e) {
+			// could not send back a response
 			// nothing to do
 			e.printStackTrace();
 		}

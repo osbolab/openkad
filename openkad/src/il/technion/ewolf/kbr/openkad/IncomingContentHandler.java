@@ -6,7 +6,7 @@ import il.technion.ewolf.kbr.concurrent.CompletionHandler;
 import il.technion.ewolf.kbr.openkad.msg.ContentMessage;
 import il.technion.ewolf.kbr.openkad.msg.ContentRequest;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
-import il.technion.ewolf.kbr.openkad.net.KadServer;
+import il.technion.ewolf.kbr.openkad.net.Communicator;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -31,7 +31,7 @@ class IncomingContentHandler<A> implements CompletionHandler<KadMessage, A> {
 	// dependencies
 	private final ExecutorService clientExecutor;
 	private final Node localNode;
-	private final KadServer kadServer;
+	private final Communicator kadServer;
 	
 	/**
 	 * 
@@ -43,7 +43,7 @@ class IncomingContentHandler<A> implements CompletionHandler<KadMessage, A> {
 	IncomingContentHandler(
 			@Named("openkad.executors.client") ExecutorService clientExecutor,
 			@Named("openkad.local.node") Node localNode,
-			KadServer kadServer) {
+			Communicator kadServer) {
 		this.kadServer = kadServer;
 		this.clientExecutor = clientExecutor;
 		this.localNode = localNode;

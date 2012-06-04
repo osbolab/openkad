@@ -5,14 +5,12 @@ import static ch.lambdaj.Lambda.sort;
 import il.technion.ewolf.kbr.KeyColorComparator;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
-import il.technion.ewolf.kbr.openkad.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.ForwardMessage;
 import il.technion.ewolf.kbr.openkad.msg.ForwardRequest;
 import il.technion.ewolf.kbr.openkad.msg.ForwardResponse;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
-import il.technion.ewolf.kbr.openkad.msg.StoreMessage;
-import il.technion.ewolf.kbr.openkad.net.KadServer;
 import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.net.filter.IdMessageFilter;
 import il.technion.ewolf.kbr.openkad.net.filter.TypeMessageFilter;
@@ -34,24 +32,23 @@ public class ForwardFindValueOperation extends FindValueOperation {
 	private int nrQueried = 0;
 	private List<Node> bootstrap;
 	
-	
 	// dependencies
 	private final int kBucketSize;
 	private final int nrCandidates;
 	private final int nrColors;
 	private final int myColor;
-	private final int nrShare;
+	//private final int nrShare;
 	private final long timeout;
 	private final Node localNode;
 	
 	private final Provider<ForwardRequest> forwardRequestProvider;
 	private final Provider<MessageDispatcher<Void>> msgDispatcherProvider;
 	private final Provider<FindValueOperation> findValueOperationProvider;
-	private final Provider<StoreMessage> storeMessageProvider;
+	//private final Provider<StoreMessage> storeMessageProvider;
 	
 	private final KBuckets kBuckets;
 	private final KadCache cache;
-	private final KadServer kadServer;
+	//private final KadServer kadServer;
 	
 	// testing
 	private final AtomicInteger nrLongTimeouts;
@@ -69,18 +66,18 @@ public class ForwardFindValueOperation extends FindValueOperation {
 			@Named("openkad.color.candidates") int nrCandidates,
 			@Named("openkad.color.nrcolors") int nrColors,
 			@Named("openkad.local.color") int myColor,
-			@Named("openkad.cache.share") int nrShare,
+			//@Named("openkad.cache.share") int nrShare,
 			@Named("openkad.net.forwarded.timeout") long timeout,
 			@Named("openkad.local.node") Node localNode,
 			
 			Provider<ForwardRequest> forwardRequestProvider,
 			Provider<MessageDispatcher<Void>> msgDispatcherProvider,
 			@Named("openkad.op.lastFindValue") Provider<FindValueOperation> findValueOperationProvider,
-			Provider<StoreMessage> storeMessageProvider,
+			//Provider<StoreMessage> storeMessageProvider,
 			
 			KBuckets kBuckets,
 			KadCache cache,
-			KadServer kadServer,
+			//KadServer kadServer,
 			
 			//testing
 			@Named("openkad.testing.nrLongTimeouts") AtomicInteger nrLongTimeouts,
@@ -96,18 +93,18 @@ public class ForwardFindValueOperation extends FindValueOperation {
 		this.nrCandidates = nrCandidates;
 		this.nrColors = nrColors;
 		this.myColor = myColor;
-		this.nrShare = nrShare;
+		//this.nrShare = nrShare;
 		this.timeout = timeout;
 		this.localNode = localNode;
 		
 		this.forwardRequestProvider = forwardRequestProvider;
 		this.msgDispatcherProvider = msgDispatcherProvider;
 		this.findValueOperationProvider = findValueOperationProvider;
-		this.storeMessageProvider = storeMessageProvider;
+		//this.storeMessageProvider = storeMessageProvider;
 		
 		this.kBuckets = kBuckets;
 		this.cache = cache;
-		this.kadServer = kadServer;
+		//this.kadServer = kadServer;
 		
 		this.nrLongTimeouts = nrLongTimeouts;
 		this.hopsToResultHistogram = hopsToResultHistogram;
@@ -125,7 +122,8 @@ public class ForwardFindValueOperation extends FindValueOperation {
 	}
 	
 	private List<Node> sendForwardRequest(Node to, ForwardRequest req) throws CancellationException, InterruptedException, ExecutionException {
-		System.out.println(localNode+": forwarding to "+to);
+		//System.out.println(localNode+": forwarding to "+to);
+		
 		Future<KadMessage> requestFuture = msgDispatcherProvider.get()
 			.setConsumable(true)
 			.addFilter(new IdMessageFilter(req.getId()))
@@ -134,10 +132,11 @@ public class ForwardFindValueOperation extends FindValueOperation {
 		
 		ForwardResponse res = (ForwardResponse)requestFuture.get();
 		if (res.isAck()) {
-			System.out.println(localNode+": remote node return ack");
+			//System.out.println(localNode+": remote node return ack");
 			
 		} else if (res.isNack()) {
-			System.out.println(localNode+": remote node return nack");
+			// System.out.println(localNode+": remote node return nack");
+			
 			nrNacks.incrementAndGet();
 			bootstrap.addAll(res.getNodes());
 			
@@ -146,30 +145,29 @@ public class ForwardFindValueOperation extends FindValueOperation {
 			
 			// Logical throw to indicate result was a nack. 
 			// will be caught outside to cancel the expect.
-			
 			throw new CancellationException("nack");
 			
 		} else {
 			assert (res.getNodes() != null);
+			remoteCacheHits.incrementAndGet();
+			//System.out.println(localNode+": cache hit");
 			
-			if (res.getNodes() != null) {
-				System.out.println(localNode+": cache hit");
-				remoteCacheHits.incrementAndGet();
-				// we had a cache hit !
-				// no need to wait for future messages
-				int hopsToResult = 1;
-				if (hopsToResult > maxHopsToResult.get())
-					maxHopsToResult.set(hopsToResult);
-				hopsToResultHistogram.add(hopsToResult);
-				return res.getNodes();
-			}
+			// we had a cache hit !
+			// no need to wait for future messages
+			int hopsToResult = 1;
+			System.out.println("im here");
+			if (hopsToResult > maxHopsToResult.get())
+				maxHopsToResult.set(hopsToResult);
+			hopsToResultHistogram.add(hopsToResult);
+			return res.getNodes();
+			
 		}
 		
 		return null;
 	}
 	
 	
-	private List<Node> waitForResults(Future<KadMessage> expectMessage) throws Exception {
+	private List<Node> waitForResults(Future<KadMessage> expectMessage) throws InterruptedException, ExecutionException, CancellationException  {
 		ForwardMessage msg = (ForwardMessage)expectMessage.get();
 		
 		if (msg.isNack()) {
@@ -182,6 +180,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 		} else if (msg.getNodes() != null) {
 			// remote node has calculated the results for me
 			int hopsToResult = 1 + msg.getPathLength();
+			
 			if (hopsToResult > maxHopsToResult.get())
 				maxHopsToResult.set(hopsToResult);
 			
@@ -192,13 +191,13 @@ public class ForwardFindValueOperation extends FindValueOperation {
 			} else {
 				remoteCacheHits.incrementAndGet();
 			}
-			System.out.println(localNode+": remote node has calculated the results for me");
+			//System.out.println(localNode+": remote node has calculated the results for me");
 			return msg.getNodes();
 			
 		} else {
 			// remote node has returned null, move on to the
 			// next candidate
-			System.out.println(localNode+": remote node has returned null, move on to the next candidate");
+			//System.out.println(localNode+": remote node has returned null, move on to the next candidate");
 			nrNacks.incrementAndGet();
 		}
 		
@@ -208,23 +207,26 @@ public class ForwardFindValueOperation extends FindValueOperation {
 	@Override
 	public List<Node> doFindValue() {
 
+		
 		List<Node> nodes = cache.search(key);
-		if (nodes != null && nodes.size() >= kBucketSize) {
+		if (nodes != null) {
 			return nodes;
 		}
+		
+		bootstrap = kBuckets.getClosestNodesByKey(key, kBucketSize);
+		bootstrap.add(localNode);
+		List<Node> candidates = sort(bootstrap, on(Node.class).getKey(), new KeyColorComparator(key, nrColors));
+		
 		
 		if (myColor == key.getColor(nrColors)) {
 			hopsToResultHistogram.add(0);
 			return doFindNode();
 		}
 		
-		bootstrap = kBuckets.getClosestNodesByKey(key, kBucketSize);
-		bootstrap.add(localNode);
-		List<Node> candidates = sort(bootstrap, on(Node.class).getKey(), new KeyColorComparator(key, nrColors));
-		List<Node> colorCandidates = kBuckets.getNodesFromColorBucket(key);
-		candidates.removeAll(colorCandidates);
-		candidates.addAll(0, colorCandidates);
 		
+		//List<Node> colorCandidates = kBuckets.getNodesFromColorBucket(key);
+		//candidates.removeAll(colorCandidates);
+		//candidates.addAll(0, colorCandidates);
 		if (candidates.size() > nrCandidates)
 			candidates.subList(nrCandidates, candidates.size()).clear();
 		
@@ -235,6 +237,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 			}
 			
 			Node n = candidates.remove(0);
+			++nrQueried;
 			
 			if (n.equals(localNode)) {
 				hopsToResultHistogram.add(0);
@@ -251,7 +254,6 @@ public class ForwardFindValueOperation extends FindValueOperation {
 				.setBootstrap(bootstrap)
 				.setKey(key);
 			
-			
 			Future<KadMessage> expectMessage = msgDispatcherProvider.get()
 				.setConsumable(true)
 				.addFilter(new IdMessageFilter(req.getId()))
@@ -264,7 +266,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 				List<Node> results = sendForwardRequest(n, req);
 				if (results != null) {
 					expectMessage.cancel(false);
-					shareResults(colorCandidates, results);
+					//shareResults(colorCandidates, results);
 					return results;
 				}
 				// results is null, that means the remote node will
@@ -281,7 +283,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 			try {
 				List<Node> results = waitForResults(expectMessage);
 				if (results != null) {
-					shareResults(colorCandidates, results);
+					//shareResults(colorCandidates, results);
 					return results;
 				}
 				
@@ -294,7 +296,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 		} while (true);
 	}
 	
-	
+	/*
 	private void shareResults(List<Node> toShareWith, List<Node> results) {
 		if (toShareWith.size() > nrShare)
 			toShareWith.subList(nrShare, toShareWith.size()).clear();
@@ -311,21 +313,23 @@ public class ForwardFindValueOperation extends FindValueOperation {
 			} catch (Exception e) {}
 		}
 	}
+	*/
 	
 	private List<Node> doFindNode() {
 		
 		if (myColor != key.getColor(nrColors)) {
 			nrFindNodesWithWrongColor.incrementAndGet();
 		}
-		
 		FindValueOperation op = findValueOperationProvider.get()
+			.setBootstrap(bootstrap)
 			.setKey(key);
 		
 		List<Node> $ = op.doFindValue();
 		
-		if (op.getNrQueried() != 0) {
-			findNodeHopsHistogram.add(op.getNrQueried());
-		} else {
+		nrQueried += op.getNrQueried();
+		System.out.println("nrQueried: "+nrQueried);
+		
+		if (op.getNrQueried() == 0) {
 			localCacheHits.incrementAndGet();
 		}
 		

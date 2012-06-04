@@ -15,7 +15,7 @@ import il.technion.ewolf.kbr.openkad.msg.ContentMessage;
 import il.technion.ewolf.kbr.openkad.msg.ContentRequest;
 import il.technion.ewolf.kbr.openkad.msg.ContentResponse;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
-import il.technion.ewolf.kbr.openkad.net.KadServer;
+import il.technion.ewolf.kbr.openkad.net.Communicator;
 import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.net.filter.IdMessageFilter;
 import il.technion.ewolf.kbr.openkad.net.filter.TagMessageFilter;
@@ -57,12 +57,13 @@ class KadNet implements KeybasedRouting {
 	private final Provider<ForwardHandler> forwardHandlerProvider;
 	
 	private final Node localNode;
-	private final KadServer kadServer;
-	private final KBuckets kBuckets;
+	private final Communicator kadServer;
+	private final NodeStorage nodeStorage;
 	private final KeyFactory keyFactory;
 	private final ExecutorService clientExecutor;
 	private final int bucketSize;
 	private final TimerTask refreshTask;
+	private final BootstrapNodesSaver bootstrapNodesSaver;
 	
 	// testing
 	private final List<Integer> findNodeHopsHistogram;
@@ -84,12 +85,13 @@ class KadNet implements KeybasedRouting {
 			Provider<ForwardHandler> forwardHandlerProvider,
 			
 			@Named("openkad.local.node") Node localNode,
-			KadServer kadServer,
-			KBuckets kBuckets,
+			Communicator kadServer,
+			NodeStorage nodeStorage,
 			KeyFactory keyFactory,
 			@Named("openkad.executors.client") ExecutorService clientExecutor,
 			@Named("openkad.bucket.kbuckets.maxsize") int bucketSize,
 			@Named("openkad.refresh.task") TimerTask refreshTask,
+			BootstrapNodesSaver bootstrapNodesSaver,
 			
 			//testing
 			@Named("openkad.testing.findNodeHopsHistogram") List<Integer> findNodeHopsHistogram) {
@@ -108,11 +110,13 @@ class KadNet implements KeybasedRouting {
 		
 		this.localNode = localNode;
 		this.kadServer = kadServer;
-		this.kBuckets = kBuckets;
+		this.nodeStorage = nodeStorage;
 		this.keyFactory = keyFactory;
 		this.clientExecutor = clientExecutor;
 		this.bucketSize = bucketSize;
 		this.refreshTask = refreshTask;
+		this.bootstrapNodesSaver = bootstrapNodesSaver;
+		
 		//testing
 		this.findNodeHopsHistogram = findNodeHopsHistogram;
 	}
@@ -127,9 +131,12 @@ class KadNet implements KeybasedRouting {
 		storeHandlerProvider.get().register();
 		forwardHandlerProvider.get().register();
 		
-		kBuckets.registerIncomingMessageHandler();
+		nodeStorage.registerIncomingMessageHandler();
 		kadServerThread = new Thread(kadServer);
 		kadServerThread.start();
+		
+		bootstrapNodesSaver.load();
+		bootstrapNodesSaver.start();
 	}
 
 	@Override
@@ -153,6 +160,8 @@ class KadNet implements KeybasedRouting {
 		if ($.size() > bucketSize)
 			$.subList(bucketSize, $.size()).clear();
 		
+		System.out.println(op.getNrQueried());
+		
 		return result;
 	}
 
@@ -163,7 +172,7 @@ class KadNet implements KeybasedRouting {
 
 	@Override
 	public List<Node> getNeighbours() {
-		return kBuckets.getAllNodes();
+		return nodeStorage.getAllNodes();
 	}
 	
 	@Override
@@ -173,7 +182,7 @@ class KadNet implements KeybasedRouting {
 	
 	@Override
 	public String toString() {
-		return localNode.toString()+"\n"+kBuckets.toString();
+		return localNode.toString()+"\n"+nodeStorage.toString();
 	}
 
 	@Override
@@ -262,6 +271,12 @@ class KadNet implements KeybasedRouting {
 	
 	@Override
 	public void shutdown() {
+		try {
+			bootstrapNodesSaver.saveNow();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		refreshTask.cancel();
 		kadServer.shutdown(kadServerThread);
 	}

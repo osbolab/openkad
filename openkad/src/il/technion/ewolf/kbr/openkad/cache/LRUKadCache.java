@@ -20,6 +20,7 @@ public class LRUKadCache implements KadCache {
 
 	// dependencies
 	private final int size;
+	private final int kBucketSize;
 	
 	// state
 	private final List<CacheEntry> cache;
@@ -45,9 +46,11 @@ public class LRUKadCache implements KadCache {
 	
 	@Inject
 	LRUKadCache(
+			@Named("openkad.bucket.kbuckets.maxsize") int kBucketSize,
 			@Named("openkad.cache.size") int size) {
 		
 		this.size = size;
+		this.kBucketSize = kBucketSize;
 		this.cache = new LinkedList<CacheEntry>();
 		this.entryFromKey = new HashMap<Key, CacheEntry>();
 	}
@@ -58,6 +61,9 @@ public class LRUKadCache implements KadCache {
 	
 	@Override
 	public synchronized void insert(Key key, List<Node> nodes) {
+		if (nodes.size() != kBucketSize)
+			return;
+		
 		CacheEntry cacheEntry = entryFromKey.get(key);
 		if (cacheEntry != null) {
 			cache.remove(cacheEntry);

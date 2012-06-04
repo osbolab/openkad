@@ -3,8 +3,8 @@ package il.technion.ewolf.kbr.openkad.op;
 import il.technion.ewolf.kbr.Key;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.KBuckets;
 import il.technion.ewolf.kbr.openkad.KadNode;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
 import il.technion.ewolf.kbr.openkad.msg.PingRequest;
 import il.technion.ewolf.kbr.openkad.msg.PingResponse;
@@ -82,6 +82,7 @@ public class JoinOperation  {
 	public JoinOperation addBootstrap(Collection<URI> bootstrapUri) {
 		
 		for (URI uri : bootstrapUri) {
+			
 			Node n = new Node(zeroKey);
 			try {
 				n.setInetAddress(InetAddress.getByName(uri.getHost()));
@@ -139,9 +140,6 @@ public class JoinOperation  {
 			throw new RuntimeException(e1);
 		}
 		
-		if (kBuckets.getClosestNodesByKey(zeroKey, 1).isEmpty())
-			throw new IllegalStateException("all bootstrap nodes are down");
-		
 		findNodeOperationProvider.get()
 			.setKey(localNode.getKey())
 			.doFindNode();
@@ -151,6 +149,9 @@ public class JoinOperation  {
 				.setKey(key)
 				.doFindNode();
 		}
+		
+		if (kBuckets.getClosestNodesByKey(zeroKey, 1).isEmpty())
+			throw new IllegalStateException("all bootstrap nodes are down");
 		
 		try {
 			timer.scheduleAtFixedRate(refreshTask, refreshInterval, refreshInterval);

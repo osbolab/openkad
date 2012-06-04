@@ -4,11 +4,12 @@ import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
 import il.technion.ewolf.kbr.openkad.msg.PingRequest;
 import il.technion.ewolf.kbr.openkad.msg.PingResponse;
-import il.technion.ewolf.kbr.openkad.net.KadServer;
+import il.technion.ewolf.kbr.openkad.net.Communicator;
 import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.net.filter.MessageFilter;
 import il.technion.ewolf.kbr.openkad.net.filter.TypeMessageFilter;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,14 +25,14 @@ import com.google.inject.name.Named;
  */
 public class PingHandler extends AbstractHandler {
 
-	private final KadServer kadServer;
+	private final Communicator kadServer;
 	private final Node localNode;
 	private final AtomicInteger nrIncomingPings;
 	
 	@Inject
 	PingHandler(
 			Provider<MessageDispatcher<Void>> msgDispatcherProvider,
-			KadServer kadServer,
+			Communicator kadServer,
 			@Named("openkad.local.node") Node localNode,
 			@Named("openkad.testing.nrIncomingPings") AtomicInteger nrIncomingPings) {
 		super(msgDispatcherProvider);
@@ -42,11 +43,12 @@ public class PingHandler extends AbstractHandler {
 
 	@Override
 	public void completed(KadMessage msg, Void attachment) {
+		nrIncomingPings.incrementAndGet();
+		PingResponse pingResponse = ((PingRequest)msg).generateResponse(localNode);
+		
 		try {
-			nrIncomingPings.incrementAndGet();
-			PingResponse pingResponse = ((PingRequest)msg).generateResponse(localNode);
 			kadServer.send(msg.getSrc(), pingResponse);
-		} catch (Exception e) {
+		} catch (IOException e) {
 			// nothing to do
 			e.printStackTrace();
 		}

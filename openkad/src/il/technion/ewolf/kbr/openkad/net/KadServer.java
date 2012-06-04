@@ -13,6 +13,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -30,7 +32,7 @@ import com.google.inject.name.Named;
  * @author eyal.kibbar@gmail.com
  *
  */
-public class KadServer implements Runnable {
+public class KadServer implements Communicator {
 
 	// dependencies
 	private final KadSerializer serializer;
@@ -38,6 +40,7 @@ public class KadServer implements Runnable {
 	//private final BlockingQueue<DatagramPacket> pkts;
 	private final ExecutorService srvExecutor;
 	private final Set<MessageDispatcher<?>> expecters;
+	private final Set<MessageDispatcher<?>> nonConsumableExpecters;
 	private final String kadScheme;
 	
 	// testing
@@ -58,6 +61,7 @@ public class KadServer implements Runnable {
 			//@Named("openkad.net.buffer") BlockingQueue<DatagramPacket> pkts,
 			@Named("openkad.executors.server") ExecutorService srvExecutor,
 			@Named("openkad.net.expecters") Set<MessageDispatcher<?>> expecters,
+			@Named("openkad.net.expecters.nonConsumable") Set<MessageDispatcher<?>> nonConsumableExpecters,
 			
 			// testing
 			@Named("openkad.testing.nrOutgoingPings") AtomicInteger nrOutgoingPings,
@@ -71,6 +75,7 @@ public class KadServer implements Runnable {
 		//this.pkts = pkts;
 		this.srvExecutor = srvExecutor;
 		this.expecters = expecters;
+		this.nonConsumableExpecters = nonConsumableExpecters;
 		
 		this.nrOutgoingPings = nrOutgoingPings;
 		this.nrIncomingMessages = nrIncomingMessages;
@@ -112,6 +117,31 @@ public class KadServer implements Runnable {
 		}
 	}
 	
+	private List<MessageDispatcher<?>> extractShouldHandle(KadMessage msg) {
+		List<MessageDispatcher<?>> shouldHandle = Collections.emptyList();
+		List<MessageDispatcher<?>> nonConsumableShouldHandle = Collections.emptyList();
+		List<MessageDispatcher<?>> $ = new ArrayList<MessageDispatcher<?>>();
+		synchronized (expecters) {
+			if (!expecters.isEmpty()) {
+				shouldHandle = filter(
+						having(on(MessageDispatcher.class).shouldHandleMessage(msg), is(true)),
+						expecters);
+			}
+		}
+		
+		synchronized (nonConsumableExpecters) {
+			if (!nonConsumableExpecters.isEmpty()) {
+				nonConsumableShouldHandle = filter(
+						having(on(MessageDispatcher.class).shouldHandleMessage(msg), is(true)),
+						nonConsumableExpecters);
+			}
+		}
+		
+		$.addAll(nonConsumableShouldHandle);
+		$.addAll(shouldHandle);
+		return $;
+	}
+	
 	private void handleIncomingPacket(final DatagramPacket pkt) {
 		nrIncomingMessages.incrementAndGet();
 		nrBytesRecved.addAndGet(pkt.getLength());
@@ -135,12 +165,8 @@ public class KadServer implements Runnable {
 				}
 				
 				// call all the expecters
-				List<MessageDispatcher<?>> shouldHandle;
-				synchronized (expecters) {
-					shouldHandle = filter(
-							having(on(MessageDispatcher.class).shouldHandleMessage(msg), is(true)),
-							expecters);
-				}
+				List<MessageDispatcher<?>> shouldHandle = extractShouldHandle(msg);
+				
 				for (MessageDispatcher<?> m : shouldHandle) {
 					try {
 						m.handle(msg);

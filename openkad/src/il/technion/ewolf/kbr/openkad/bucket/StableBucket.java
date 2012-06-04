@@ -1,7 +1,8 @@
-package il.technion.ewolf.kbr.openkad;
+package il.technion.ewolf.kbr.openkad.bucket;
 
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
+import il.technion.ewolf.kbr.openkad.KadNode;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
 import il.technion.ewolf.kbr.openkad.msg.PingRequest;
 import il.technion.ewolf.kbr.openkad.msg.PingResponse;
@@ -43,7 +44,7 @@ public class StableBucket implements Bucket {
 	private final ExecutorService pingExecutor;
 	
 	@Inject
-	StableBucket(
+	public StableBucket(
 			int maxSize,
 			@Named("openkad.bucket.valid_timespan") long validTimespan,
 			@Named("openkad.executors.ping") ExecutorService pingExecutor,

@@ -9,13 +9,13 @@ import il.technion.ewolf.kbr.Key;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.ForwardMessage;
 import il.technion.ewolf.kbr.openkad.msg.ForwardRequest;
 import il.technion.ewolf.kbr.openkad.msg.ForwardResponse;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
-import il.technion.ewolf.kbr.openkad.net.KadServer;
+import il.technion.ewolf.kbr.openkad.net.Communicator;
 import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.net.filter.IdMessageFilter;
 import il.technion.ewolf.kbr.openkad.net.filter.MessageFilter;
@@ -49,7 +49,7 @@ import com.google.inject.name.Named;
 public class ForwardHandler extends AbstractHandler {
 
 	private final KadCache cache;
-	private final KadServer kadServer;
+	private final Communicator kadServer;
 	private final KBuckets kBuckets;
 	
 	private final Provider<FindValueOperation> findValueOperationProvider;
@@ -74,7 +74,7 @@ public class ForwardHandler extends AbstractHandler {
 	@Inject
 	ForwardHandler(
 			KadCache cache,
-			KadServer kadServer,
+			Communicator kadServer,
 			KBuckets kBuckets,
 			
 			@Named("openkad.op.lastFindValue") Provider<FindValueOperation> findValueOperationProvider,
@@ -131,21 +131,21 @@ public class ForwardHandler extends AbstractHandler {
 					nrFindNodesWithWrongColor.incrementAndGet();
 				}
 				
-				System.out.println(localNode+": doing the find node");
+				//System.out.println(localNode+": doing the find node");
 				FindValueOperation op = findValueOperationProvider.get()
 					.setBootstrap(req.getBootstrap())
 					.setKey(req.getKey());
 				
 				List<Node> results = op.doFindValue();
 				
-				System.out.println(localNode+": finished find node, returning results");
+				//System.out.println(localNode+": finished find node, returning results");
 				
 				ForwardMessage msg = req.generateMessage(localNode)
 					.setFindNodeHops(op.getNrQueried())
 					.setPathLength(0)
 					.setNodes(results);
 				
-				System.out.println(localNode+": sending "+results+" back to "+req.getSrc());
+				//System.out.println(localNode+": sending "+results+" back to "+req.getSrc());
 				
 				try {
 					kadServer.send(req.getSrc(), msg);

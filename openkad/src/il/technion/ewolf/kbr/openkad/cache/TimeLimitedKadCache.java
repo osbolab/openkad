@@ -17,7 +17,7 @@ import javax.inject.Named;
  * @author eyal.kibbar@gmail.com
  *
  */
-public class OptimalKadCache implements KadCache {
+public class TimeLimitedKadCache implements KadCache {
 
 	private final long validTime;
 	private final AtomicInteger optimalCacheMaxSize;
@@ -49,7 +49,7 @@ public class OptimalKadCache implements KadCache {
 	protected final Map<Key, CacheEntry> cache = new HashMap<Key, CacheEntry>();
 	
 	@Inject
-	OptimalKadCache(
+	TimeLimitedKadCache(
 			@Named("openkad.cache.validtime") long validTime,
 			@Named("openkad.testing.optimalCacheMaxSize") AtomicInteger optimalCacheMaxSize) {
 		this.validTime = validTime;

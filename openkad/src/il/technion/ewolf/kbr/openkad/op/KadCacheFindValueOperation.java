@@ -5,13 +5,13 @@ import static ch.lambdaj.Lambda.sort;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeRequest;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
 import il.technion.ewolf.kbr.openkad.msg.StoreMessage;
-import il.technion.ewolf.kbr.openkad.net.KadServer;
+import il.technion.ewolf.kbr.openkad.net.Communicator;
 import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.net.filter.IdMessageFilter;
 import il.technion.ewolf.kbr.openkad.net.filter.TypeMessageFilter;
@@ -43,6 +43,7 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 	private int nrQueried;
 	private List<Node> lastSentTo;
 	private Node returnedCachedResults = null;
+	private KeyComparator keyComparator;
 	
 	// dependencies
 	private final Provider<FindNodeRequest> findNodeRequestProvider;
@@ -52,7 +53,7 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 	private final int kBucketSize;
 	private final int nrShare;
 	private final Provider<StoreMessage> storeMessageProvider;
-	private final KadServer kadServer;
+	private final Communicator kadServer;
 	private final KadCache cache;
 	
 	private final AtomicInteger nrLocalCacheHits;
@@ -67,7 +68,7 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 			Provider<MessageDispatcher<Node>> msgDispatcherProvider,
 			KBuckets kBuckets,
 			Provider<StoreMessage> storeMessageProvider,
-			KadServer kadServer,
+			Communicator kadServer,
 			KadCache cache,
 			
 			@Named("openkad.testing.nrLocalCacheHits") AtomicInteger nrLocalCacheHits,
@@ -143,6 +144,13 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 			} catch (Exception e) {}
 		}
 	}
+	
+	private void sortKnownClosestNodes() {
+		knownClosestNodes = sort(knownClosestNodes, on(Node.class).getKey(), keyComparator);
+		if (knownClosestNodes.size() >= kBucketSize)
+			knownClosestNodes.subList(kBucketSize, knownClosestNodes.size()).clear();
+	}
+	
 	@Override
 	public List<Node> doFindValue() {
 
@@ -152,11 +160,10 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 			return nodes;
 		}
 		
-		
 		knownClosestNodes = kBuckets.getClosestNodesByKey(key, kBucketSize);
 		knownClosestNodes.add(localNode);
 		alreadyQueried.add(localNode);
-		KeyComparator keyComparator = new KeyComparator(key);
+		keyComparator = new KeyComparator(key);
 		
 		do {
 			Node n = takeUnqueried();
@@ -169,27 +176,19 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 						try {
 							wait();
 						} catch (InterruptedException e) {
-							e.printStackTrace();
 						}
 					}
 				}
 			}
 			
 			synchronized(this) {
-				knownClosestNodes = sort(knownClosestNodes, on(Node.class).getKey(), keyComparator);
-				if (knownClosestNodes.size() >= kBucketSize)
-					knownClosestNodes.subList(kBucketSize, knownClosestNodes.size()).clear();
+				sortKnownClosestNodes();
 				
-				if (!hasMoreToQuery())
+				if (!hasMoreToQuery() || returnedCachedResults != null)
 					break;
-				
-				if (returnedCachedResults != null)
-					break;
-				
 			}
 			
 		} while (true);
-		
 		
 		knownClosestNodes = Collections.unmodifiableList(knownClosestNodes);
 		
@@ -199,7 +198,7 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 			nrRemoteCacheHits.incrementAndGet();
 
 		synchronized (this) {
-			nrQueried = alreadyQueried.size()+querying.size()-1;
+			nrQueried = alreadyQueried.size() + querying.size() - 1;
 		}
 		
 		return knownClosestNodes;
@@ -225,14 +224,13 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 		
 		if (((FindNodeResponse)msg).isCachedResults()) {
 			returnedCachedResults = n;
-			return;
+		} else {
+			// listing n as last contacted nodes in the algorithm
+			// that did not have the results in its cache
+			lastSentTo.add(n);
+			if (lastSentTo.size() > nrShare)
+				lastSentTo.remove(0);
 		}
-		
-		// listing n as last contacted nodes in the algorithm
-		// that did not have the results in its cache
-		lastSentTo.add(n);
-		if (lastSentTo.size() > nrShare)
-			lastSentTo.remove(0);
 		
 	}
 	

@@ -47,27 +47,43 @@ public class MessageDispatcher<A> {
 	// dependencies
 	private final BlockingQueue<MessageDispatcher<?>> outstandingRequests;
 	private final Set<MessageDispatcher<?>> expecters; // must be sync'ed set
+	private final Set<MessageDispatcher<?>> nonConsumableexpecters; // must be sync'ed set
+	
 	private final Timer timer;
-	private final KadServer communicator;
+	private final Communicator communicator;
 
 	
 	@Inject
 	MessageDispatcher(
 			@Named("openkad.net.req_queue") BlockingQueue<MessageDispatcher<?>> outstandingRequests,
 			@Named("openkad.net.expecters") Set<MessageDispatcher<?>> expecters,
+			@Named("openkad.net.expecters.nonConsumable") Set<MessageDispatcher<?>> nonConsumableexpecters,
 			@Named("openkad.timer") Timer timer,
 			@Named("openkad.net.timeout") long timeout,
-			KadServer communicator) {
+			Communicator communicator) {
 		
 		this.outstandingRequests = outstandingRequests;
 		this.expecters = expecters;
+		this.nonConsumableexpecters = nonConsumableexpecters;
 		this.timer = timer;
 		this.timeout = timeout;
 		this.communicator = communicator;
 		this.isDone = new AtomicBoolean(false);
 	}
 	
+	private void expect() {
+		if (isConsumbale)
+			expecters.add(this);
+		else 
+			nonConsumableexpecters.add(this);
+	}
 	
+	private void cancelExpect() {
+		if (isConsumbale)
+			expecters.remove(this);
+		else 
+			nonConsumableexpecters.remove(this);
+	}
 	
 	public void cancel(Throwable exc) {
 		if (!isDone.compareAndSet(false, true))
@@ -77,7 +93,7 @@ public class MessageDispatcher<A> {
 			timeoutTimerTask.cancel();
 		
 		outstandingRequests.remove(this);
-		expecters.remove(this);
+		cancelExpect();
 		
 		if (callback != null)
 			callback.failed(exc, attachment);
@@ -151,7 +167,7 @@ public class MessageDispatcher<A> {
 		};
 		
 		setCallback(null, f);
-		expecters.add(this);
+		expect();
 		setupTimeout();
 		
 		return f;
@@ -179,7 +195,7 @@ public class MessageDispatcher<A> {
 				throw new RejectedExecutionException();
 			*/
 			outstandingRequests.put(this);
-			expecters.add(this);
+			expect();
 			communicator.send(to, req);
 			
 			setupTimeout();

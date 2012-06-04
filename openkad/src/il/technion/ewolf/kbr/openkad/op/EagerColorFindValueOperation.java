@@ -7,13 +7,13 @@ import il.technion.ewolf.kbr.KeyColorComparator;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeRequest;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
 import il.technion.ewolf.kbr.openkad.msg.StoreMessage;
-import il.technion.ewolf.kbr.openkad.net.KadServer;
+import il.technion.ewolf.kbr.openkad.net.Communicator;
 import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.net.filter.IdMessageFilter;
 import il.technion.ewolf.kbr.openkad.net.filter.TypeMessageFilter;
@@ -59,7 +59,7 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 	private final KBuckets kBuckets;
 	private final Node localNode;
 	private final int kBucketSize;
-	private final KadServer kadServer;
+	private final Communicator kadServer;
 	private final KadCache cache;
 	private final int nrShare;
 	private final int nrColors;
@@ -79,7 +79,7 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 			Provider<FindNodeRequest> findNodeRequestProvider,
 			Provider<MessageDispatcher<Node>> msgDispatcherProvider,
 			Provider<StoreMessage> storeMessageProvider,
-			KadServer kadServer,
+			Communicator kadServer,
 			KBuckets kBuckets,
 			KadCache cache,
 			@Named("openkad.testing.nrLocalCacheHits") AtomicInteger nrLocalCacheHits,
@@ -244,6 +244,7 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 		StoreMessage storeMessage = storeMessageProvider.get()
 			.setKey(key)
 			.setNodes(knownClosestNodes);
+		
 		for (Node n : toShareWith) {
 			// dont send if the remote node has a different color
 			if (n.getKey().getColor(nrColors) != key.getColor(nrColors))

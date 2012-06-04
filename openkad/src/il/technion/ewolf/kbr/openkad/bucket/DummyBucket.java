@@ -1,6 +1,7 @@
-package il.technion.ewolf.kbr.openkad;
+package il.technion.ewolf.kbr.openkad.bucket;
 
 import il.technion.ewolf.kbr.Node;
+import il.technion.ewolf.kbr.openkad.KadNode;
 
 import java.util.Collection;
 
@@ -9,7 +10,7 @@ import java.util.Collection;
  * 
  * @author eyal.kibbar@gmail.com
  */
-class DummyBucket implements Bucket {
+public class DummyBucket implements Bucket {
 
 	@Override
 	public void insert(KadNode n) {

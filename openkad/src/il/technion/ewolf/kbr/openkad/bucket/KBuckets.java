@@ -1,4 +1,4 @@
-package il.technion.ewolf.kbr.openkad;
+package il.technion.ewolf.kbr.openkad.bucket;
 
 import static ch.lambdaj.Lambda.on;
 import static ch.lambdaj.Lambda.sort;
@@ -8,6 +8,8 @@ import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.KeyFactory;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
+import il.technion.ewolf.kbr.openkad.KadNode;
+import il.technion.ewolf.kbr.openkad.NodeStorage;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
 import il.technion.ewolf.kbr.openkad.msg.ForwardMessage;
 import il.technion.ewolf.kbr.openkad.msg.ForwardRequest;
@@ -43,7 +45,7 @@ import com.google.inject.name.Named;
  * @author eyal.kibbar@gmail.com
  *
  */
-public class KBuckets {
+public class KBuckets implements NodeStorage {
 
 	private final Provider<MessageDispatcher<Object>> msgDispatcherProvider;
 	private final Provider<KadNode> kadNodeProvider;
@@ -63,7 +65,6 @@ public class KBuckets {
 			@Named("openkad.local.node") Node localNode,
 			@Named("openkad.color.nrcolors") int nrColors,
 			@Named("openkad.color.allcolors") int nrAllColors) {
-		
 		this.keyFactory = keyFactory;
 		this.msgDispatcherProvider = msgDispatcherProvider;
 		this.kadNodeProvider = kadNodeProvider;

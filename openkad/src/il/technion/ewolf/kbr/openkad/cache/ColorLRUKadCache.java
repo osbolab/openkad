@@ -22,9 +22,10 @@ public class ColorLRUKadCache extends LRUKadCache {
 	@Inject
 	ColorLRUKadCache(
 			@Named("openkad.cache.size") int size,
+			@Named("openkad.bucket.kbuckets.maxsize") int kBucketSize,
 			@Named("openkad.color.nrcolors") int nrColors,
 			@Named("openkad.local.color") int myColor) {
-		super(size);
+		super(size, kBucketSize);
 		this.nrColors = nrColors;
 		this.myColor = myColor;
 	}
