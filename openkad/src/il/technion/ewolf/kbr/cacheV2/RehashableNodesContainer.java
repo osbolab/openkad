@@ -28,10 +28,9 @@ public class RehashableNodesContainer{
 		String[] hashKeys = node.getRehashValuesAsStrings();
 		for(int i=0 ; i<hashKeys.length ; i++){
 			List<KadCacheV2Node> nodesList = nodesHash.get(hashKeys[i]);
-			if(nodesList==null){
-				continue;
+			if(nodesList!=null){
+				nodesList.remove(node);
 			}
-			nodesList.remove(node);
 		}
 	}
 }
