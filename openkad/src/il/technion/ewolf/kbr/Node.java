@@ -20,7 +20,7 @@ import java.util.Map;
  * @author eyal.kibbar@gmail.com
  *
  */
-public class Node implements Serializable {
+public class Node implements Serializable,Comparable<Node> {
 
 	private static final long serialVersionUID = 2520444508318328765L;
 	
@@ -156,6 +156,11 @@ public class Node implements Serializable {
 			return false;
 		Node other = (Node) obj;
 		return getKey().equals(other.getKey());
+	}
+
+	@Override
+	public int compareTo(Node node) {
+		return key.compareTo(node.key);
 	}
 	
 	

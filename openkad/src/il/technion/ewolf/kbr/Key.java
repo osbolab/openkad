@@ -11,7 +11,7 @@ import org.apache.commons.codec.binary.Base64;
  * Identifier for nodes. Use {@link KeyFactory} to generate instances of this class.
  * @author eyal.kibbar@gmail.com
  */
-public class Key implements Serializable {
+public class Key implements Serializable,Comparable<Key> {
 
 	private static final long serialVersionUID = 4137662182397711129L;
 	
@@ -124,7 +124,7 @@ public class Key implements Serializable {
 	}
 	
 	public String toString() {
-		return Base64.encodeBase64String(bytes);
+		return Base64.encodeBase64URLSafeString(bytes);
 	}
 	
 	/**
@@ -152,5 +152,9 @@ public class Key implements Serializable {
 			$ += str+" ";
 		}
 		return $;
+	}
+	@Override
+	public int compareTo(Key arg0) {
+		return toString().compareTo(arg0.toString());
 	}
 }
