@@ -43,7 +43,6 @@ public class MessageDispatcher<A> {
 	private final Set<MessageFilter> filters = new HashSet<MessageFilter>();
 	private TimerTask timeoutTimerTask = null;
 	private final AtomicBoolean isDone;
-	
 	// dependencies
 	private final BlockingQueue<MessageDispatcher<?>> outstandingRequests;
 	private final Set<MessageDispatcher<?>> expecters; // must be sync'ed set
