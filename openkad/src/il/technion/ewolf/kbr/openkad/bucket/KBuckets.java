@@ -15,9 +15,6 @@ public interface KBuckets extends NodeStorage {
 	 */
 	public abstract List<Key> randomKeysForAllBuckets();
 
-	
-	
-
 	/**
 	 * Inserts a node to the data structure
 	 * The can be rejected, depending on the bucket policy
@@ -56,8 +53,6 @@ public interface KBuckets extends NodeStorage {
 	 * @return a list of nodes sorted by proximity to the given key's color
 	 */
 	public abstract List<Node> getClosestNodesByColor(Key k, int n);
-
-	public abstract List<Node> getNodesFromColorBucket(Key k);
 
 	public abstract String toString();
 

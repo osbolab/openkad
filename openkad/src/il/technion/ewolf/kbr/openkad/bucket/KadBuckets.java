@@ -50,35 +50,26 @@ public class KadBuckets implements NodeStorage,KBuckets {
 	private final Provider<MessageDispatcher<Object>> msgDispatcherProvider;
 	private final Provider<KadNode> kadNodeProvider;
 	private final Bucket[] kbuckets;
-	private final Bucket[] colorsBucket;
 	private final Node localNode;
 	private final KeyFactory keyFactory;
 	private final int nrColors;
-	private final int nrAllColors;
 	@Inject
 	KadBuckets(
 			KeyFactory keyFactory,
 			Provider<KadNode> kadNodeProvider,
 			Provider<MessageDispatcher<Object>> msgDispatcherProvider,
 			@Named("openkad.bucket.kbuckets") Provider<Bucket> kBucketProvider,
-			@Named("openkad.bucket.slack") Provider<Bucket> colorsBucketProvider,
 			@Named("openkad.local.node") Node localNode,
-			@Named("openkad.color.nrcolors") int nrColors,
-			@Named("openkad.color.allcolors") int nrAllColors) {
+			@Named("openkad.color.nrcolors") int nrColors) {
 		this.keyFactory = keyFactory;
 		this.msgDispatcherProvider = msgDispatcherProvider;
 		this.kadNodeProvider = kadNodeProvider;
 		this.localNode = localNode;
 		this.nrColors = nrColors;
-		this.nrAllColors = nrAllColors;
 		
 		kbuckets = new Bucket[keyFactory.getBitLength()];
 		for (int i=0; i < kbuckets.length; ++i) {
 			kbuckets[i] = kBucketProvider.get();
-		}
-		colorsBucket = new Bucket[nrAllColors];
-		for (int i=0; i < colorsBucket.length; ++i) {
-			colorsBucket[i] = colorsBucketProvider.get();
 		}
 	}
 
@@ -198,7 +189,6 @@ public class KadBuckets implements NodeStorage,KBuckets {
 			return;
 		
 		kbuckets[i].insert(node);
-		colorsBucket[node.getNode().getKey().getColor(nrAllColors)].insert(node);
 	}
 	
 	/**
@@ -269,13 +259,6 @@ public class KadBuckets implements NodeStorage,KBuckets {
 		$ = sort($, on(Node.class).getKey(), new KeyColorComparator(k, nrColors));
 		if ($.size() > n)
 			$.subList(n, $.size()).clear();
-		return $;
-	}
-	
-	
-	public List<Node> getNodesFromColorBucket(Key k) {
-		List<Node> $ = new ArrayList<Node>();
-		colorsBucket[k.getColor(nrAllColors)].addNodesTo($);
 		return $;
 	}
 	

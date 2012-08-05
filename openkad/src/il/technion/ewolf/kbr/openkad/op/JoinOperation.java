@@ -4,7 +4,6 @@ import il.technion.ewolf.kbr.Key;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
 import il.technion.ewolf.kbr.openkad.KadNode;
-import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
 import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
 import il.technion.ewolf.kbr.openkad.msg.PingRequest;

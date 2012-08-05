@@ -6,9 +6,8 @@ import il.technion.ewolf.kbr.KeybasedRouting;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.RandomKeyFactory;
 import il.technion.ewolf.kbr.openkad.bucket.Bucket;
-import il.technion.ewolf.kbr.openkad.bucket.DummyBucket;
-import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
 import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
 import il.technion.ewolf.kbr.openkad.bucket.StableBucket;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.cache.LRUKadCache;
@@ -29,11 +28,8 @@ import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.op.EagerColorFindValueOperation;
 import il.technion.ewolf.kbr.openkad.op.FindNodeOperation;
 import il.technion.ewolf.kbr.openkad.op.FindValueOperation;
-import il.technion.ewolf.kbr.openkad.op.ForwardFindValueOperation;
 import il.technion.ewolf.kbr.openkad.op.JoinOperation;
 import il.technion.ewolf.kbr.openkad.op.KadCacheFindValueOperation;
-import il.technion.ewolf.kbr.openkad.op.KadLocalCacheFindValueOperation;
-
 
 import java.io.File;
 import java.io.IOException;
@@ -110,8 +106,6 @@ public class KadNetModule extends AbstractModule {
 		defaultProps.setProperty("openkad.net.forwarded.timeout", TimeUnit.SECONDS.toMillis(30)+"");
 		
 		defaultProps.setProperty("openkad.color.candidates", "1");
-		defaultProps.setProperty("openkad.color.slack.size", "1");
-		defaultProps.setProperty("openkad.color.allcolors", "17");
 		// interval between successive find node operations for refresh buckets
 		defaultProps.setProperty("openkad.refresh.interval", TimeUnit.SECONDS.toMillis(30)+"");
 		
@@ -123,12 +117,6 @@ public class KadNetModule extends AbstractModule {
 		// misc
 		defaultProps.setProperty("openkad.seed", "0");
 
-		// VisionCache
-		defaultProps.setProperty("vision.guesser.size", "400");
-		defaultProps.setProperty("vision.ratio", "1");
-		defaultProps.setProperty("vision.opsToReset", "6000");
-		defaultProps.setProperty("vision.guesser.falsepositive", "0.01");
-		
 		return defaultProps;
 	}
 	
@@ -237,13 +225,6 @@ public class KadNetModule extends AbstractModule {
 			Provider<PingRequest> pingRequestProvider,
 			Provider<MessageDispatcher<Void>> msgDispatcherProvider) {
 		return new StableBucket(maxSize, validTimespan, pingExecutor, pingRequestProvider, msgDispatcherProvider);
-	}
-	
-	@Provides
-	@Named("openkad.bucket.slack")
-	Bucket provideSlackBucket(@Named("openkad.color.slack.size") int maxSize) {
-		//return new SlackBucket(maxSize);
-		return new DummyBucket();
 	}
 	
 	@Provides
