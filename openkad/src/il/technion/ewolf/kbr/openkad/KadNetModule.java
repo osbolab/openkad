@@ -7,13 +7,17 @@ import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.RandomKeyFactory;
 import il.technion.ewolf.kbr.openkad.bucket.Bucket;
 import il.technion.ewolf.kbr.openkad.bucket.DummyBucket;
-import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.Kbuckets;
 import il.technion.ewolf.kbr.openkad.bucket.StableBucket;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.cache.LRUKadCache;
-import il.technion.ewolf.kbr.openkad.cache.StoppableCache;
+import il.technion.ewolf.kbr.openkad.cache.vision.LRUWithLFUFilter;
+import il.technion.ewolf.kbr.openkad.cache.vision.VisionKadCache;
+import il.technion.ewolf.kbr.openkad.cache.vision.genericLRUKadCache;
 import il.technion.ewolf.kbr.openkad.handlers.FindNodeHandler;
 import il.technion.ewolf.kbr.openkad.handlers.ForwardHandler;
+import il.technion.ewolf.kbr.openkad.handlers.KademliaFindNodeHandler;
 import il.technion.ewolf.kbr.openkad.handlers.PingHandler;
 import il.technion.ewolf.kbr.openkad.handlers.StoreHandler;
 import il.technion.ewolf.kbr.openkad.msg.ContentRequest;
@@ -30,6 +34,9 @@ import il.technion.ewolf.kbr.openkad.op.FindNodeOperation;
 import il.technion.ewolf.kbr.openkad.op.FindValueOperation;
 import il.technion.ewolf.kbr.openkad.op.ForwardFindValueOperation;
 import il.technion.ewolf.kbr.openkad.op.JoinOperation;
+import il.technion.ewolf.kbr.openkad.op.KadCacheFindValueOperation;
+import il.technion.ewolf.kbr.openkad.op.KadLocalCacheFindValueOperation;
+
 
 import java.io.File;
 import java.io.IOException;
@@ -107,7 +114,7 @@ public class KadNetModule extends AbstractModule {
 		
 		defaultProps.setProperty("openkad.color.candidates", "1");
 		defaultProps.setProperty("openkad.color.slack.size", "1");
-		defaultProps.setProperty("openkad.color.allcolors", "95");
+		defaultProps.setProperty("openkad.color.allcolors", "17");
 		// interval between successive find node operations for refresh buckets
 		defaultProps.setProperty("openkad.refresh.interval", TimeUnit.SECONDS.toMillis(30)+"");
 		
@@ -118,6 +125,12 @@ public class KadNetModule extends AbstractModule {
 
 		// misc
 		defaultProps.setProperty("openkad.seed", "0");
+
+		// VisionCache
+		defaultProps.setProperty("vision.guesser.size", "400");
+		defaultProps.setProperty("vision.ratio", "1");
+		defaultProps.setProperty("vision.opsToReset", "6000");
+		defaultProps.setProperty("vision.guesser.falsepositive", "0.01");
 		
 		return defaultProps;
 	}
@@ -152,49 +165,66 @@ public class KadNetModule extends AbstractModule {
 		bind(ForwardRequest.class);
 		bind(ContentRequest.class);
 		
-		bind(KadNode.class)
-			.to(UndeadKadNode.class);
+		bind(KadNode.class);
+			//.to(UndeadKadNode.class);
 		
-		bind(KBuckets.class).in(Scopes.SINGLETON);
-		bind(NodeStorage.class).to(KBuckets.class).in(Scopes.SINGLETON);
+		bind(Kbuckets.class).to(KadBuckets.class).in(Scopes.SINGLETON);
+		bind(NodeStorage.class).to(Kbuckets.class).in(Scopes.SINGLETON);
 		bind(MessageDispatcher.class);
 		bind(KadSerializer.class).to(JsonKadSerializer.class).in(Scopes.SINGLETON);
 		bind(KadServer.class).in(Scopes.SINGLETON);
 		bind(Communicator.class).to(KadServer.class).in(Scopes.SINGLETON);
-		
-		bind(KadCache.class)
-			.annotatedWith(Names.named("openkad.cache.stoppable.cache"))
-			.to(LRUKadCache.class)
-			.in(Scopes.SINGLETON);
+//		
+//		bind(KadCache.class)
+//			.annotatedWith(Names.named("openkad.cache.stoppable.cache"))
+//			.to(LRUKadCache.class)
+//			.in(Scopes.SINGLETON);
 		
 		bind(KadCache.class)
 			//.to(DummyKadCache.class)
 			//.to(OptimalKadCache.class)
 			//.to(LRUKadCache.class)
-			//.to(ColorLRUKadCache.class)
-			.to(StoppableCache.class)
+			//.to(VisionKadCache.class)
+
+			.to(LRUKadCache.class)
+
+			//.to(LRUKadCache.class)
+			//.to(StoppableCache.class)
 			.in(Scopes.SINGLETON);
-		
+		//only for debug. 
+		//this.bind(genericLRUKadCache.class).to(GenericVisionKadCache.class);
 		bind(JoinOperation.class);
 		bind(FindNodeOperation.class);
 		
+		bind(FindNodeHandler.class)
+		//.to(VisionFindNodeHandler.class);
+		.to(KademliaFindNodeHandler.class);
+		//bind(VisionFindNodeHandler.class);
+		
 		// bind handlers
-		bind(FindNodeHandler.class);
 		bind(PingHandler.class);
 		bind(StoreHandler.class);
 		bind(ForwardHandler.class);
-		
+		//bind(ResetableGuessingBloomFilter.class).in(Scopes.SINGLETON);
 		
 		bind(FindValueOperation.class)
 			.annotatedWith(Names.named("openkad.op.findvalue"))
+
+			//.to(KadFindValueOperation.class);
+
 			//.to(KadLocalCacheFindValueOperation.class);
-			//.to(KadCacheFindValueOperation.class);
-			.to(ForwardFindValueOperation.class);
+			.to(KadCacheFindValueOperation.class);
+
+			//.to(VisionEagerColorFindValueOperation.class);
+			//.to(ForwardFindValueOperation.class);
 		
 		bind(FindValueOperation.class)
 			.annotatedWith(Names.named("openkad.op.lastFindValue"))
-			//.to(KadFindValueOperation.class);
+			//			.to(VisionCacheFindValueOperation.class);
+			//.to(VisionEagerColorFindValueOperation.class);
+			//.to(KadCacheFindValueOperation.class);
 			.to(EagerColorFindValueOperation.class);
+			
 		
 		bind(BootstrapNodesSaver.class).in(Scopes.SINGLETON);
 		

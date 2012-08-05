@@ -9,7 +9,7 @@ import il.technion.ewolf.kbr.Key;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.ForwardMessage;
 import il.technion.ewolf.kbr.openkad.msg.ForwardRequest;
@@ -50,7 +50,7 @@ public class ForwardHandler extends AbstractHandler {
 
 	private final KadCache cache;
 	private final Communicator kadServer;
-	private final KBuckets kBuckets;
+	private final KadBuckets kBuckets;
 	
 	private final Provider<FindValueOperation> findValueOperationProvider;
 	private final Provider<ForwardRequest> forwardRequestProvider;
@@ -75,7 +75,7 @@ public class ForwardHandler extends AbstractHandler {
 	ForwardHandler(
 			KadCache cache,
 			Communicator kadServer,
-			KBuckets kBuckets,
+			KadBuckets kBuckets,
 			
 			@Named("openkad.op.lastFindValue") Provider<FindValueOperation> findValueOperationProvider,
 			Provider<ForwardRequest> forwardRequestProvider,
@@ -165,7 +165,7 @@ public class ForwardHandler extends AbstractHandler {
 		if (req.isInitiator()) // TODO: remove before publish
 			nrForwardHandlingFromInitiator.incrementAndGet();
 		
-		System.out.println(localNode+": recved forward request from "+req.getSrc());
+		//System.out.println(localNode+": recved forward request from "+req.getSrc());
 		
 		// check the cache first
 		List<Node> cachedResults = cache.search(req.getKey());
@@ -185,13 +185,13 @@ public class ForwardHandler extends AbstractHandler {
 		// no cached result
 		// continue with the operation
 		assert (cachedResults == null);
-		System.out.println(localNode+": result was not in cache");
+		//System.out.println(localNode+": result was not in cache");
 		
 		// either forward to someone else or do the job myself
 		if (myColor == req.getKey().getColor(nrColors)) {
 			// i need to perform the find value because i have
 			// the right color
-			System.out.println(localNode+": I have the right color");
+			//System.out.println(localNode+": I have the right color");
 			doFindValueAndSendAckOrNack(req);
 		} else {
 			// i am in the wrong color, forward the request to
@@ -222,7 +222,7 @@ public class ForwardHandler extends AbstractHandler {
 				public void completed(KadMessage msg, Void nothing) {
 					// forward back to src
 					ForwardMessage res = (ForwardMessage)msg;
-					System.out.println(localNode+": "+res.getSrc()+" had an answer: "+res.getNodes());
+					//System.out.println(localNode+": "+res.getSrc()+" had an answer: "+res.getNodes());
 					
 					if (res.isNack()) {
 						// remote node decided it is too busy even though
@@ -345,7 +345,7 @@ public class ForwardHandler extends AbstractHandler {
 					ForwardResponse res = (ForwardResponse)msg;
 					
 					if (res.isAck()) {
-						System.out.println(localNode+": remote node is calculating for me");
+						//System.out.println(localNode+": remote node is calculating for me");
 						// next hop got the request and is resolving it
 						// an answer should arrive soon to the expectMessage
 						// handler (the answer can either nack or the results)
@@ -360,7 +360,7 @@ public class ForwardHandler extends AbstractHandler {
 					} else {
 						// response is neither ack nor nack
 						// the remote node had an answer !!
-						System.out.println(localNode+": remote node had an answer in its cache");
+						//System.out.println(localNode+": remote node had an answer in its cache");
 						// no need to expect a message, we already got the results
 						expectDispatcher.cancel(new CancellationException());
 						

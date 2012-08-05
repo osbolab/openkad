@@ -19,12 +19,11 @@ public abstract class AbstractHandler implements CompletionHandler<KadMessage, V
 
 	private final Provider<MessageDispatcher<Void>> msgDispatcherProvider;
 	
-	AbstractHandler(Provider<MessageDispatcher<Void>> msgDispatcherProvider) {
+	protected AbstractHandler(Provider<MessageDispatcher<Void>> msgDispatcherProvider) {
 		this.msgDispatcherProvider = msgDispatcherProvider;
 	}
 	
 	/**
-	 * 
 	 * @return all the filters associated with this handler
 	 */
 	protected abstract Collection<MessageFilter> getFilters();

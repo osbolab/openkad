@@ -5,7 +5,8 @@ import static ch.lambdaj.Lambda.sort;
 import il.technion.ewolf.kbr.KeyColorComparator;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
-import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.Kbuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.ForwardMessage;
 import il.technion.ewolf.kbr.openkad.msg.ForwardRequest;
@@ -46,7 +47,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 	private final Provider<FindValueOperation> findValueOperationProvider;
 	//private final Provider<StoreMessage> storeMessageProvider;
 	
-	private final KBuckets kBuckets;
+	private final Kbuckets kBuckets;
 	private final KadCache cache;
 	//private final KadServer kadServer;
 	
@@ -75,7 +76,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 			@Named("openkad.op.lastFindValue") Provider<FindValueOperation> findValueOperationProvider,
 			//Provider<StoreMessage> storeMessageProvider,
 			
-			KBuckets kBuckets,
+			Kbuckets kBuckets,
 			KadCache cache,
 			//KadServer kadServer,
 			
@@ -155,7 +156,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 			// we had a cache hit !
 			// no need to wait for future messages
 			int hopsToResult = 1;
-			System.out.println("im here");
+			
 			if (hopsToResult > maxHopsToResult.get())
 				maxHopsToResult.set(hopsToResult);
 			hopsToResultHistogram.add(hopsToResult);

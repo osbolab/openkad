@@ -1,7 +1,7 @@
 package il.technion.ewolf.kbr.openkad;
 
 import il.technion.ewolf.kbr.Node;
-import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,13 +18,13 @@ import com.google.inject.name.Named;
 public class BootstrapNodesSaver {
 
 	
-	private final KBuckets kBuckets;
+	private final KadBuckets kBuckets;
 	private final Provider<KadNode> kadNodeProvider;
 	private final File nodesFile;
 	
 	@Inject
 	BootstrapNodesSaver(
-			KBuckets kBuckets,
+			KadBuckets kBuckets,
 			Provider<KadNode> kadNodeProvider,
 			@Named("openkad.file.nodes") File nodesFile) {
 		

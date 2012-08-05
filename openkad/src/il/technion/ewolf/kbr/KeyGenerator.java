@@ -2,6 +2,7 @@ package il.technion.ewolf.kbr;
 
 import il.technion.ewolf.kbr.openkad.KadNetModule;
 
+import java.io.File;
 import java.io.PrintStream;
 
 import com.google.inject.Guice;
@@ -20,10 +21,11 @@ public class KeyGenerator {
 		
 		PrintStream out = new PrintStream("keys.7");
 		
-		for (int i=0; i < 100000; ++i) {
+		for (int i=0; i < 1000000; ++i) {
 			out.println(kf.generate().toBase64());
 		}
-		
+	     String currentDir = new File(".").getAbsolutePath();
+	     System.out.println(currentDir);
 		out.close();
 		System.out.println("DONE !");
 	}

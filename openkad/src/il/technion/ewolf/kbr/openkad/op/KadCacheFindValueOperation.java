@@ -5,7 +5,8 @@ import static ch.lambdaj.Lambda.sort;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.Kbuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeRequest;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
@@ -48,7 +49,7 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 	// dependencies
 	private final Provider<FindNodeRequest> findNodeRequestProvider;
 	private final Provider<MessageDispatcher<Node>> msgDispatcherProvider;
-	private final KBuckets kBuckets;
+	private final Kbuckets kBuckets;
 	private final Node localNode;
 	private final int kBucketSize;
 	private final int nrShare;
@@ -66,7 +67,7 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 			@Named("openkad.cache.share") int nrShare,
 			Provider<FindNodeRequest> findNodeRequestProvider,
 			Provider<MessageDispatcher<Node>> msgDispatcherProvider,
-			KBuckets kBuckets,
+			Kbuckets kBuckets,
 			Provider<StoreMessage> storeMessageProvider,
 			Communicator kadServer,
 			KadCache cache,

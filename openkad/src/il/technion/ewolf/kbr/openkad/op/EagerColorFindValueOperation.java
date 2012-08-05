@@ -7,7 +7,8 @@ import il.technion.ewolf.kbr.KeyColorComparator;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.Kbuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeRequest;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
@@ -56,7 +57,7 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 	private final Provider<FindNodeRequest> findNodeRequestProvider;
 	private final Provider<MessageDispatcher<Node>> msgDispatcherProvider;
 	private final Provider<StoreMessage> storeMessageProvider;
-	private final KBuckets kBuckets;
+	private final Kbuckets kBuckets;
 	private final Node localNode;
 	private final int kBucketSize;
 	private final Communicator kadServer;
@@ -80,7 +81,7 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 			Provider<MessageDispatcher<Node>> msgDispatcherProvider,
 			Provider<StoreMessage> storeMessageProvider,
 			Communicator kadServer,
-			KBuckets kBuckets,
+			Kbuckets kBuckets,
 			KadCache cache,
 			@Named("openkad.testing.nrLocalCacheHits") AtomicInteger nrLocalCacheHits,
 			@Named("openkad.testing.nrRemoteCacheHits") AtomicInteger nrRemoteCacheHits) {

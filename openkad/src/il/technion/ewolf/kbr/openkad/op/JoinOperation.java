@@ -4,7 +4,8 @@ import il.technion.ewolf.kbr.Key;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
 import il.technion.ewolf.kbr.openkad.KadNode;
-import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.Kbuckets;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
 import il.technion.ewolf.kbr.openkad.msg.PingRequest;
 import il.technion.ewolf.kbr.openkad.msg.PingResponse;
@@ -38,7 +39,7 @@ public class JoinOperation  {
 	private final Provider<MessageDispatcher<Void>> msgDispatcherProvider;
 	private final Key zeroKey;
 	private final String kadScheme;
-	private final KBuckets kBuckets;
+	private final Kbuckets kBuckets;
 	private final Node localNode;
 	private final Provider<KadNode> kadNodeProvider;
 	private final Timer timer;
@@ -53,7 +54,7 @@ public class JoinOperation  {
 			Provider<PingRequest> pingRequestProvider,
 			Provider<MessageDispatcher<Void>> msgDispatcherProvider,
 			Provider<KadNode> kadNodeProvider,
-			KBuckets kBuckets,
+			Kbuckets kBuckets,
 			@Named("openkad.keys.zerokey") Key zeroKey,
 			@Named("openkad.scheme.name") String kadScheme,
 			@Named("openkad.local.node") Node localNode,

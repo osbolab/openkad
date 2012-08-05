@@ -6,7 +6,8 @@ import il.technion.ewolf.kbr.Key;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.concurrent.CompletionHandler;
-import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
+import il.technion.ewolf.kbr.openkad.bucket.Kbuckets;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeRequest;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
 import il.technion.ewolf.kbr.openkad.msg.KadMessage;
@@ -42,7 +43,7 @@ public class FindNodeOperation implements CompletionHandler<KadMessage, Node> {
 	private final Provider<FindNodeRequest> findNodeRequestProvider;
 	private final Provider<MessageDispatcher<Node>> msgDispatcherProvider;
 	private final int kBucketSize;
-	private final KBuckets kBuckets;
+	private final Kbuckets kBuckets;
 	private final Node localNode;
 	
 	@Inject
@@ -51,7 +52,7 @@ public class FindNodeOperation implements CompletionHandler<KadMessage, Node> {
 			@Named("openkad.bucket.kbuckets.maxsize") int kBucketSize,
 			Provider<FindNodeRequest> findNodeRequestProvider,
 			Provider<MessageDispatcher<Node>> msgDispatcherProvider,
-			KBuckets kBuckets) {
+			Kbuckets kBuckets) {
 		
 		this.localNode = localNode;
 		this.kBucketSize = kBucketSize;

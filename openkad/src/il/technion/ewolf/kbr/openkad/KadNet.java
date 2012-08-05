@@ -42,7 +42,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
 
-class KadNet implements KeybasedRouting {
+public class KadNet implements KeybasedRouting {
 
 	// dependencies
 	private final Provider<MessageDispatcher<Object>> msgDispatcherProvider;
