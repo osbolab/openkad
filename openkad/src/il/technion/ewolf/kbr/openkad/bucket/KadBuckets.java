@@ -45,7 +45,7 @@ import com.google.inject.name.Named;
  * @author eyal.kibbar@gmail.com
  *
  */
-public class KadBuckets implements NodeStorage,Kbuckets {
+public class KadBuckets implements NodeStorage,KBuckets {
 
 	private final Provider<MessageDispatcher<Object>> msgDispatcherProvider;
 	private final Provider<KadNode> kadNodeProvider;

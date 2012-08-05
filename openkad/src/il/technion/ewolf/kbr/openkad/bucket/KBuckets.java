@@ -7,7 +7,7 @@ import il.technion.ewolf.kbr.openkad.NodeStorage;
 
 import java.util.List;
 
-public interface Kbuckets extends NodeStorage {
+public interface KBuckets extends NodeStorage {
 
 	/**
 	 * Uses the keyFactory to generate keys which will fit to different buckets

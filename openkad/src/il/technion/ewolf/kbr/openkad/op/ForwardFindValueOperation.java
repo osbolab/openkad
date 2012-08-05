@@ -6,7 +6,7 @@ import il.technion.ewolf.kbr.KeyColorComparator;
 import il.technion.ewolf.kbr.KeyComparator;
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
-import il.technion.ewolf.kbr.openkad.bucket.Kbuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.ForwardMessage;
 import il.technion.ewolf.kbr.openkad.msg.ForwardRequest;
@@ -47,7 +47,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 	private final Provider<FindValueOperation> findValueOperationProvider;
 	//private final Provider<StoreMessage> storeMessageProvider;
 	
-	private final Kbuckets kBuckets;
+	private final KBuckets kBuckets;
 	private final KadCache cache;
 	//private final KadServer kadServer;
 	
@@ -76,7 +76,7 @@ public class ForwardFindValueOperation extends FindValueOperation {
 			@Named("openkad.op.lastFindValue") Provider<FindValueOperation> findValueOperationProvider,
 			//Provider<StoreMessage> storeMessageProvider,
 			
-			Kbuckets kBuckets,
+			KBuckets kBuckets,
 			KadCache cache,
 			//KadServer kadServer,
 			

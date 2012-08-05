@@ -8,13 +8,10 @@ import il.technion.ewolf.kbr.RandomKeyFactory;
 import il.technion.ewolf.kbr.openkad.bucket.Bucket;
 import il.technion.ewolf.kbr.openkad.bucket.DummyBucket;
 import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
-import il.technion.ewolf.kbr.openkad.bucket.Kbuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.bucket.StableBucket;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.cache.LRUKadCache;
-import il.technion.ewolf.kbr.openkad.cache.vision.LRUWithLFUFilter;
-import il.technion.ewolf.kbr.openkad.cache.vision.VisionKadCache;
-import il.technion.ewolf.kbr.openkad.cache.vision.genericLRUKadCache;
 import il.technion.ewolf.kbr.openkad.handlers.FindNodeHandler;
 import il.technion.ewolf.kbr.openkad.handlers.ForwardHandler;
 import il.technion.ewolf.kbr.openkad.handlers.KademliaFindNodeHandler;
@@ -168,8 +165,8 @@ public class KadNetModule extends AbstractModule {
 		bind(KadNode.class);
 			//.to(UndeadKadNode.class);
 		
-		bind(Kbuckets.class).to(KadBuckets.class).in(Scopes.SINGLETON);
-		bind(NodeStorage.class).to(Kbuckets.class).in(Scopes.SINGLETON);
+		bind(KBuckets.class).to(KadBuckets.class).in(Scopes.SINGLETON);
+		bind(NodeStorage.class).to(KBuckets.class).in(Scopes.SINGLETON);
 		bind(MessageDispatcher.class);
 		bind(KadSerializer.class).to(JsonKadSerializer.class).in(Scopes.SINGLETON);
 		bind(KadServer.class).in(Scopes.SINGLETON);
