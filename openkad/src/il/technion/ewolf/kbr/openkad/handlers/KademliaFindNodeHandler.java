@@ -2,7 +2,7 @@ package il.technion.ewolf.kbr.openkad.handlers;
 
 import il.technion.ewolf.kbr.Node;
 import il.technion.ewolf.kbr.openkad.bucket.KadBuckets;
-import il.technion.ewolf.kbr.openkad.bucket.Kbuckets;
+import il.technion.ewolf.kbr.openkad.bucket.KBuckets;
 import il.technion.ewolf.kbr.openkad.cache.KadCache;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeRequest;
 import il.technion.ewolf.kbr.openkad.msg.FindNodeResponse;
@@ -33,7 +33,7 @@ public class KademliaFindNodeHandler extends AbstractHandler implements FindNode
 	private final Communicator kadServer;
 	private final Node localNode;
 	private final KadCache cache;
-	private final Kbuckets kBuckets;
+	private final KBuckets kBuckets;
 	private final int kBucketSize;
 	
 	private final AtomicInteger nrFindnodeHits;
@@ -46,7 +46,7 @@ public class KademliaFindNodeHandler extends AbstractHandler implements FindNode
 			Communicator kadServer,
 			@Named("openkad.local.node") Node localNode,
 			KadCache cache,
-			Kbuckets kBuckets,
+			KBuckets kBuckets,
 			@Named("openkad.bucket.kbuckets.maxsize") int kBucketSize,
 			
 			@Named("openkad.testing.nrFindnodeHits") AtomicInteger nrFindnodeHits,
