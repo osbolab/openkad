@@ -31,9 +31,8 @@ public class FindNodeResponse extends KadResponse {
 		return this;
 	}
 	
-	/**
-	 * 
-	 * @return the nodes closest to the request key
+	/* (non-Javadoc)
+	 * @see il.technion.ewolf.kbr.openkad.msg.FindNodeResponse#getNodes()
 	 */
 	public List<Node> getNodes() {
 		return nodes;
@@ -44,14 +43,23 @@ public class FindNodeResponse extends KadResponse {
 		return this;
 	}
 	
+	/* (non-Javadoc)
+	 * @see il.technion.ewolf.kbr.openkad.msg.FindNodeResponse#isCachedResults()
+	 */
 	public boolean isCachedResults() {
 		return cachedResults;
 	}
 
+	/* (non-Javadoc)
+	 * @see il.technion.ewolf.kbr.openkad.msg.FindNodeResponse#isNeeeded()
+	 */
 	public boolean isNeeeded() {
 		return needed;
 	}
 
+	/* (non-Javadoc)
+	 * @see il.technion.ewolf.kbr.openkad.msg.FindNodeResponse#setNeeeded(boolean)
+	 */
 	public void setNeeeded(boolean neeeded) {
 		this.needed = neeeded;
 	}

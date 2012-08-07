@@ -20,6 +20,7 @@ public abstract class KadRequest extends KadMessage {
 	private static final long serialVersionUID = 7014729033211615669L;
 
 	@Inject
+	protected
 	KadRequest(long id, @Named("openkad.local.node") Node src) {
 		super(id, src);
 	}

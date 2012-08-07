@@ -72,7 +72,7 @@ public class KadNet implements KeybasedRouting {
 	private final Map<String, MessageDispatcher<?>> dispatcherFromTag = new HashMap<String, MessageDispatcher<?>>();
 	private Thread kadServerThread = null;
 	@Inject
-	KadNet(
+	protected KadNet(
 			Provider<MessageDispatcher<Object>> msgDispatcherProvider,
 			Provider<JoinOperation> joinOperationProvider,
 			Provider<ContentRequest> contentRequestProvider,

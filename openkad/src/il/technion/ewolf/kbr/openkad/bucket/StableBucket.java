@@ -25,7 +25,7 @@ import com.google.inject.name.Named;
  * 1. if the node is already in the bucket, move it to be the last
  * 2. if the node is not in the bucket and the bucket is not full, move it to be the last in the bucket
  * 3. if the node is not in the bucket and the bucket is full, ping the first node in the bucket:
- *  a. if it returned a ping, move it to be the first in bucket and don't insert the given node
+ *  a. if it returned a ping, move it to be the last in bucket and don't insert the given node
  *  b. if it did not returned a ping, remove it from the bucket and insert the given node as last
  *  
  * @author eyal.kibbar@gmail.com

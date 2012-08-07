@@ -22,7 +22,7 @@ import com.google.inject.name.Named;
  *
  * @param <A> any arbitrary attachment
  */
-class IncomingContentHandler<A> implements CompletionHandler<KadMessage, A> {
+public class IncomingContentHandler<A> implements CompletionHandler<KadMessage, A> {
 
 	// state
 	private String tag;
