@@ -154,6 +154,10 @@ public class KadServer implements Communicator {
 				try {
 					bin = new ByteArrayInputStream(pkt.getData(), pkt.getOffset(), pkt.getLength());
 					msg = serializer.read(bin);
+					
+					//TODO: for debug
+					System.out.println(msg);
+					
 					// fix incoming src address
 					msg.getSrc().setInetAddress(pkt.getAddress());
 				} catch (Exception e) {

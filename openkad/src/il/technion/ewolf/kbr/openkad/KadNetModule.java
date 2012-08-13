@@ -28,6 +28,7 @@ import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.op.EagerColorFindValueOperation;
 import il.technion.ewolf.kbr.openkad.op.FindNodeOperation;
 import il.technion.ewolf.kbr.openkad.op.FindValueOperation;
+import il.technion.ewolf.kbr.openkad.op.ForwardFindValueOperation;
 import il.technion.ewolf.kbr.openkad.op.JoinOperation;
 import il.technion.ewolf.kbr.openkad.op.KadCacheFindValueOperation;
 
@@ -152,9 +153,10 @@ public class KadNetModule extends AbstractModule {
 		
 		bind(KadNode.class);
 			//.to(UndeadKadNode.class);
-		
+		bind(KadBuckets.class).in(Scopes.SINGLETON);
 		bind(KBuckets.class).to(KadBuckets.class).in(Scopes.SINGLETON);
-		bind(NodeStorage.class).to(KBuckets.class).in(Scopes.SINGLETON);
+		bind(NodeStorage.class).to(KadBuckets.class).in(Scopes.SINGLETON);
+		
 		bind(MessageDispatcher.class);
 		bind(KadSerializer.class).to(JsonKadSerializer.class).in(Scopes.SINGLETON);
 		bind(KadServer.class).in(Scopes.SINGLETON);
@@ -198,10 +200,10 @@ public class KadNetModule extends AbstractModule {
 			//.to(KadFindValueOperation.class);
 
 			//.to(KadLocalCacheFindValueOperation.class);
-			.to(KadCacheFindValueOperation.class);
+			//.to(KadCacheFindValueOperation.class);
 
 			//.to(VisionEagerColorFindValueOperation.class);
-			//.to(ForwardFindValueOperation.class);
+			.to(ForwardFindValueOperation.class);
 		
 		bind(FindValueOperation.class)
 			.annotatedWith(Names.named("openkad.op.lastFindValue"))
