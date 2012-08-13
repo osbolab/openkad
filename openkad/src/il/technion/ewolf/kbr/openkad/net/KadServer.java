@@ -98,6 +98,8 @@ public class KadServer implements Communicator {
 	 * @throws IOException any socket exception
 	 */
 	public void send(Node to, KadMessage msg) throws IOException {
+		//System.out.println("KadServer: send: " + msg + " to: " + to.getKey());
+		
 		if (msg instanceof PingRequest) {
 			nrOutgoingPings.incrementAndGet();
 		}
@@ -155,8 +157,7 @@ public class KadServer implements Communicator {
 					bin = new ByteArrayInputStream(pkt.getData(), pkt.getOffset(), pkt.getLength());
 					msg = serializer.read(bin);
 					
-					//TODO: for debug
-					System.out.println(msg);
+					//System.out.println("KadServer: handleIncomingPacket: " + msg  + " from: " + msg.getSrc().getKey());
 					
 					// fix incoming src address
 					msg.getSrc().setInetAddress(pkt.getAddress());
