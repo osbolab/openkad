@@ -75,7 +75,7 @@ public class KadNetModule extends AbstractModule {
 		defaultProps.setProperty("openkad.keyfactory.keysize", "20");
 		defaultProps.setProperty("openkad.keyfactory.hashalgo", "SHA-256");
 		defaultProps.setProperty("openkad.bucket.kbuckets.maxsize", "20");
-		defaultProps.setProperty("openkad.color.nrcolors", "19");
+		defaultProps.setProperty("openkad.color.nrcolors", "1");
 		defaultProps.setProperty("openkad.scheme.name", "openkad.udp");
 		
 		// performance params
