@@ -35,14 +35,14 @@ public class StableBucket implements Bucket {
 
 	// state
 	private final List<KadNode> bucket;
-	
+
 	//dependencies
 	private final int maxSize;
 	private final long validTimespan;
 	private final Provider<PingRequest> pingRequestProvider;
 	private final Provider<MessageDispatcher<Void>> msgDispatcherProvider;
 	private final ExecutorService pingExecutor;
-	
+
 	@Inject
 	public StableBucket(
 			int maxSize,
@@ -50,7 +50,7 @@ public class StableBucket implements Bucket {
 			@Named("openkad.executors.ping") ExecutorService pingExecutor,
 			Provider<PingRequest> pingRequestProvider,
 			Provider<MessageDispatcher<Void>> msgDispatcherProvider) {
-		
+
 		this.maxSize = maxSize;
 		this.bucket = new LinkedList<KadNode>();
 		this.validTimespan = validTimespan;
@@ -58,13 +58,13 @@ public class StableBucket implements Bucket {
 		this.pingRequestProvider = pingRequestProvider;
 		this.msgDispatcherProvider = msgDispatcherProvider;
 	}
-	
+
 	@Override
 	public synchronized void insert(final KadNode n) {
 		int i = bucket.indexOf(n);
 		if (i != -1) {
 			// found node in bucket
-			
+
 			// if heard from n (it is possible to insert n i never had
 			// contact with simply by hearing about from another node)
 			if (bucket.get(i).getLastContact() < n.getLastContact()) {
@@ -75,88 +75,85 @@ public class StableBucket implements Bucket {
 		} else if (bucket.size() < maxSize) {
 			// not found in bucket and there is enough room for n
 			bucket.add(n);
-			
+
 		} else {
 			// n is not in bucket and bucket is full
-		
+
 			// don't bother to insert n if I never recved a msg from it
 			if (n.hasNeverContacted())
 				return;
-			
-			// find a node to ping that no one else is currently pinging
-			for (int j=0; j < bucket.size(); ++j) {
-				KadNode inBucketReplaceCandidate = bucket.get(j);
-				
-				// the first node was only inserted indirectly (meaning, I never recved
-				// a msg from it !) and I did recv a msg from n.
-				if (inBucketReplaceCandidate.hasNeverContacted()) {
-					bucket.remove(inBucketReplaceCandidate);
-					bucket.add(n);
-					return;
-				}
-				
-				// ping is still valid, don't replace
-				if (inBucketReplaceCandidate.isPingStillValid(validTimespan))
-					return;
-				
-				// send ping and act accordingly
-				if (inBucketReplaceCandidate.lockForPing()) {
-					sendPing(bucket.get(j), n);
-					return;
-				}
+
+			// check the first node, ping him if no one else is currently pinging
+			KadNode inBucketReplaceCandidate = bucket.get(0);
+
+			// the first node was only inserted indirectly (meaning, I never recved
+			// a msg from it !) and I did recv a msg from n.
+			if (inBucketReplaceCandidate.hasNeverContacted()) {
+				bucket.remove(inBucketReplaceCandidate);
+				bucket.add(n);
+				return;
+			}
+
+			// ping is still valid, don't replace
+			if (inBucketReplaceCandidate.isPingStillValid(validTimespan))
+				return;
+
+			// send ping and act accordingly
+			if (inBucketReplaceCandidate.lockForPing()) {
+				sendPing(bucket.get(0), n);
 			}
 		}
 	}
-	
+
 	private void sendPing(final KadNode inBucket, final KadNode replaceIfFailed) {
-		
+
 		final PingRequest pingRequest = pingRequestProvider.get();
-		
+
 		final MessageDispatcher<Void> dispatcher = msgDispatcherProvider.get()
-			.setConsumable(true)
-			.addFilter(new IdMessageFilter(pingRequest.getId()))
-			.addFilter(new TypeMessageFilter(PingResponse.class))
-			.setCallback(null, new CompletionHandler<KadMessage, Void>() {
-				@Override
-				public void completed(KadMessage msg, Void nothing) {
-					// ping was recved
-					inBucket.setNodeWasContacted();
-					inBucket.releasePingLock();
-					synchronized (StableBucket.this) {
-						if (bucket.remove(inBucket)) {
-							bucket.add(inBucket);
-						}
-					}
-				}
-				@Override
-				public void failed(Throwable exc, Void nothing) {
-					// ping was not recved
-					synchronized (StableBucket.this) {
-						// try to remove the already in bucket and 
-						// replace it with the new candidate that we
-						// just heard from.
-						if (bucket.remove(inBucket)) { 
-							// successfully removed the old node that
-							// did not answer my ping
-							
-							// try insert the new candidate
-							if (!bucket.add(replaceIfFailed)) {
-								// candidate was already in bucket
-								// return the inBucket to be the oldest node in
-								// the bucket since we don't want our bucket
-								// to shrink unnecessarily
-								bucket.add(0, inBucket);
+				.setConsumable(true)
+				.addFilter(new IdMessageFilter(pingRequest.getId()))
+				.addFilter(new TypeMessageFilter(PingResponse.class))
+				.setCallback(null, new CompletionHandler<KadMessage, Void>() {
+					@Override
+					public void completed(KadMessage msg, Void nothing) {
+						// ping was recved
+						inBucket.setNodeWasContacted();
+						inBucket.releasePingLock();
+						synchronized (StableBucket.this) {
+							if (bucket.remove(inBucket)) {
+								bucket.add(inBucket);
 							}
 						}
 					}
-					inBucket.releasePingLock();
-				}
-			});
-		
-		
+					@Override
+					public void failed(Throwable exc, Void nothing) {
+						// ping was not recved
+						synchronized (StableBucket.this) {
+							// try to remove the already in bucket and 
+							// replace it with the new candidate that we
+							// just heard from.
+							if (bucket.remove(inBucket)) { 
+								// successfully removed the old node that
+								// did not answer my ping
+
+								// try insert the new candidate
+								if (!bucket.add(replaceIfFailed)) {
+									// candidate was already in bucket
+									// return the inBucket to be the oldest node in
+									// the bucket since we don't want our bucket
+									// to shrink unnecessarily
+									bucket.add(0, inBucket);
+								}
+							}
+						}
+						inBucket.releasePingLock();
+					}
+				});
+
+
 		try {
 			pingExecutor.execute(new Runnable() {
-				
+
 				@Override
 				public void run() {
 					dispatcher.send(inBucket.getNode(), pingRequest);
@@ -166,7 +163,7 @@ public class StableBucket implements Bucket {
 			inBucket.releasePingLock();
 		}
 	}
-	
+
 	@Override
 	public synchronized void markDead(Node n) {
 		for (int i=0; i < bucket.size(); ++i) {
@@ -179,17 +176,17 @@ public class StableBucket implements Bucket {
 			}
 		}
 	}
-	
+
 	@Override
 	public synchronized void addNodesTo(Collection<Node> c) {
 		for (KadNode n : bucket) {
 			c.add(n.getNode());
 		}
 	}
-	
+
 	@Override
 	public synchronized String toString() {
 		return bucket.toString();
 	}
-	
+
 }
