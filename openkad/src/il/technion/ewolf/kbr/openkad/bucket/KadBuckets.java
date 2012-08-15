@@ -54,6 +54,7 @@ public class KadBuckets implements NodeStorage,KBuckets {
 	private final KeyFactory keyFactory;
 	private final int nrColors;
 	@Inject
+	protected
 	KadBuckets(
 			KeyFactory keyFactory,
 			Provider<KadNode> kadNodeProvider,
