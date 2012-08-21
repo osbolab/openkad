@@ -16,6 +16,9 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
+import test.Statistics;
+import test.StatisticsModule;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 public class KeybasedRoutingTest {
@@ -161,17 +164,21 @@ public class KeybasedRoutingTest {
 	public void the64NodesShouldFindEachOther() throws Throwable {
 		int basePort = 10200;
 		List<KeybasedRouting> kbrs = new ArrayList<KeybasedRouting>();
+		List<Statistics> stats = new ArrayList<Statistics>();
 		Random rnd = new Random(10200);
 		for (int i=0; i < 64; ++i) {
 			Injector injector = Guice.createInjector(new KadNetModule()
 					.setProperty("openkad.keyfactory.keysize", "3")
 					.setProperty("openkad.bucket.kbuckets.maxsize", "3")
-					.setProperty("openkad.bucket.colors.nrcolors", "1")
+					.setProperty("openkad.color.nrcolors", "1")
+					.setProperty("openkad.net.concurrency", "3")
 					.setProperty("openkad.seed", ""+(i+basePort))
-					.setProperty("openkad.net.udp.port", ""+(i+basePort)));
+					.setProperty("openkad.net.udp.port", ""+(i+basePort))
+					, new StatisticsModule());
 			KeybasedRouting kbr = injector.getInstance(KeybasedRouting.class);
 			kbr.create();
 			kbrs.add(kbr);
+			stats.add(injector.getInstance(Statistics.class));
 		}
 		
 		for (int i=1; i < kbrs.size(); ++i) {
@@ -182,6 +189,9 @@ public class KeybasedRoutingTest {
 			
 		System.out.println("finished joining");
 		
+		for (int j=0; j < stats.size(); ++j) {
+			stats.get(j).nrHandledMsgs.set(0);
+		}
 		
 		for (int i=0; i < kbrs.size(); ++i) {
 			System.out.println(kbrs.get(i));
@@ -200,8 +210,15 @@ public class KeybasedRoutingTest {
 					System.err.println(r);
 			}
 			Assert.assertEquals(1, findNodeResults.size());
-			
 		}
+		
+		int total=0;
+		for (int j=0; j < stats.size(); ++j) {
+			int curr = stats.get(j).nrHandledMsgs.get();
+			System.out.println("node: " + j + " nrHandledMsgs: " + curr);
+			total+=curr;
+		}
+		System.out.println("total: " + total);
 	}
 	
 	

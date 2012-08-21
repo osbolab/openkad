@@ -22,8 +22,6 @@ public class ShadesFindNodeResponse extends KadResponse {
 	private boolean isNeeded;
 	private boolean isPopular;
 
-
-
 	protected ShadesFindNodeResponse(long id, @Named("openkad.local.node") Node src) {
 		super(id, src);
 	}

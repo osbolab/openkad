@@ -73,11 +73,8 @@ public class JoinOperation  {
 		this.refreshInterval = refreshInterval;
 		this.refreshTask = refreshTask;
 	}
-	/**
-	 * Sets the bootstrap nodes for stating the join operation
-	 * @param bootstrapUri all the bootstraps URI in the following format:
-	 * openkad.udp://[node ip]:[port]/
-	 * @return this for fluent interface
+	/* (non-Javadoc)
+	 * @see il.technion.ewolf.kbr.openkad.op.JoinOperation#addBootstrap(java.util.Collection)
 	 */
 	public JoinOperation addBootstrap(Collection<URI> bootstrapUri) {
 		
@@ -97,8 +94,8 @@ public class JoinOperation  {
 		return this;
 	}
 	
-	/**
-	 * Join a network !
+	/* (non-Javadoc)
+	 * @see il.technion.ewolf.kbr.openkad.op.JoinOperation#doJoin()
 	 */
 	public void doJoin() {
 

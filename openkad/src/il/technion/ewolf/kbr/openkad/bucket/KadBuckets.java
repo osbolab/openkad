@@ -50,7 +50,7 @@ public class KadBuckets implements NodeStorage,KBuckets {
 	private final Provider<MessageDispatcher<Object>> msgDispatcherProvider;
 	private final Provider<KadNode> kadNodeProvider;
 	private final Bucket[] kbuckets;
-	private final Node localNode;
+	protected final Node localNode;
 	private final KeyFactory keyFactory;
 	private final int nrColors;
 	@Inject

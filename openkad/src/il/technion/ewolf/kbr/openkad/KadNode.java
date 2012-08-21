@@ -23,7 +23,7 @@ public class KadNode {
 	
 	
 	@Inject
-	protected KadNode() {
+	public KadNode() {
 	}
 	
 	@Override

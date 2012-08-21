@@ -20,19 +20,25 @@ public class KeyComparator implements Comparator<Key> {
 	
 	@Override
 	public int compare(Key n1, Key n2) {
+		
 		BigInteger b1 = n1.getInt();
 		BigInteger b2 = n2.getInt();
 		
 		b1 = b1.xor(key);
 		b2 = b2.xor(key);
 		
-		if (b1.signum() == -1 && b2.signum() != -1)
+		//System.out.println("key: " + key.toString(2) + " key1: " + b1.toString(2) + " key2: " + b2.toString(2));
+		//System.out.println("b1: " + b1.toString() + " b1 abs: " + b1.abs().toString() + " b1 signum: " + b1.signum() + " b2: " + b2.toString()  + " b2 abs: " + b2.abs().toString()  + " b2 signum: " + b2.signum() + " compare: " + b1.abs().compareTo(b2.abs()));
+
+		if (b1.signum() == -1 && b2.signum() != -1){
 			return 1;
-		if (b1.signum() != -1 && b2.signum() == -1)
+		}
+		
+		if (b1.signum() != -1 && b2.signum() == -1){
 			return -1;
+		}
 		
 		return b1.abs().compareTo(b2.abs());
-		
 	}
 
 }

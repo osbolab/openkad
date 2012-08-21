@@ -27,8 +27,10 @@ import il.technion.ewolf.kbr.openkad.net.KadServer;
 import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.op.EagerColorFindValueOperation;
 import il.technion.ewolf.kbr.openkad.op.FindNodeOperation;
+import il.technion.ewolf.kbr.openkad.op.KadFindNodeOperation;
 import il.technion.ewolf.kbr.openkad.op.FindValueOperation;
 import il.technion.ewolf.kbr.openkad.op.ForwardFindValueOperation;
+import il.technion.ewolf.kbr.openkad.op.JoinOperation;
 import il.technion.ewolf.kbr.openkad.op.JoinOperation;
 import il.technion.ewolf.kbr.openkad.op.KadCacheFindValueOperation;
 
@@ -75,7 +77,7 @@ public class KadNetModule extends AbstractModule {
 		defaultProps.setProperty("openkad.keyfactory.keysize", "20");
 		defaultProps.setProperty("openkad.keyfactory.hashalgo", "SHA-256");
 		defaultProps.setProperty("openkad.bucket.kbuckets.maxsize", "20");
-		defaultProps.setProperty("openkad.color.nrcolors", "1");
+		defaultProps.setProperty("openkad.color.nrcolors", "10");
 		defaultProps.setProperty("openkad.scheme.name", "openkad.udp");
 		
 		// performance params
@@ -181,7 +183,9 @@ public class KadNetModule extends AbstractModule {
 		//only for debug. 
 		//this.bind(genericLRUKadCache.class).to(GenericVisionKadCache.class);
 		bind(JoinOperation.class);
-		bind(FindNodeOperation.class);
+		
+		bind(KadFindNodeOperation.class);
+		bind(FindNodeOperation.class).to(KadFindNodeOperation.class);
 		
 		bind(FindNodeHandler.class)
 		//.to(VisionFindNodeHandler.class);
@@ -214,8 +218,9 @@ public class KadNetModule extends AbstractModule {
 			
 		
 		bind(BootstrapNodesSaver.class).in(Scopes.SINGLETON);
-		
 		bind(KeybasedRouting.class).to(KadNet.class).in(Scopes.SINGLETON);
+		
+		
 	}
 	
 	@Provides
@@ -356,7 +361,7 @@ public class KadNetModule extends AbstractModule {
 	@Named("openkad.refresh.task")
 	@Singleton
 	TimerTask provideRefreshTask(
-			final Provider<FindNodeOperation> findNodeOperationProvider,
+			final Provider<KadFindNodeOperation> findNodeOperationProvider,
 			final KeyFactory keyFactory) {
 		
 		return new TimerTask() {

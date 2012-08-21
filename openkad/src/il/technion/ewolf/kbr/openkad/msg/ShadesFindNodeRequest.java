@@ -17,6 +17,8 @@ public class ShadesFindNodeRequest extends KadRequest {
 	private static final long serialVersionUID = -2437918697668927600L;
 	private Key key;
 	private boolean searchCache;
+	private int requiredColor;
+	private boolean isOnlyClosestToKey;
 	
 	@Inject
 	ShadesFindNodeRequest(
@@ -52,5 +54,23 @@ public class ShadesFindNodeRequest extends KadRequest {
 		return searchCache;
 	}
 	
-
+	public ShadesFindNodeRequest setRequiredColor(int requiredColor) {
+		this.requiredColor = requiredColor;
+		return this;
+	}
+	
+	public int getRequiredColor() {
+		return requiredColor;
+	}
+	
+	public boolean getOnlyClosestToKey() {
+		return isOnlyClosestToKey;
+	}
+	
+	public ShadesFindNodeRequest setOnlyClosestToKey(boolean isOnlyClosestToKey) {
+		this.isOnlyClosestToKey = isOnlyClosestToKey;
+		return this;
+	}
+	
+	
 }

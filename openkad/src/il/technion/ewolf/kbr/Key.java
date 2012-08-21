@@ -100,7 +100,7 @@ public class Key implements Serializable,Comparable<Key> {
 	 * @return the key BigInteger representation
 	 */
 	public BigInteger getInt() {
-		return new BigInteger(getBytes());
+		return new BigInteger(1, getBytes()); //TODO: yoav is getBytes() two-complement? 
 	}
 	
 	@Override
@@ -153,6 +153,7 @@ public class Key implements Serializable,Comparable<Key> {
 		}
 		return $;
 	}
+	
 	@Override
 	public int compareTo(Key arg0) {
 		return toString().compareTo(arg0.toString());
