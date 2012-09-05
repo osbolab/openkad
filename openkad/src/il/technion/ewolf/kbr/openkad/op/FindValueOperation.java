@@ -15,6 +15,7 @@ import java.util.List;
 public abstract class FindValueOperation {
 
 	protected Key key;
+	
 	private Collection<Node> bootstrap;
 	
 	protected FindValueOperation() {

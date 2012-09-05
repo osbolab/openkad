@@ -17,7 +17,7 @@ public class Key implements Serializable,Comparable<Key> {
 	
 	private final byte[] bytes;
 	
-	Key(byte[] bytes) {
+	public Key(byte[] bytes) {
 		this.bytes = bytes;
 	}
 	/**

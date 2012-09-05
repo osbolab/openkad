@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +38,7 @@ public class KadServer implements Communicator {
 	// dependencies
 	private final KadSerializer serializer;
 	private final Provider<DatagramSocket> sockProvider;
-	//private final BlockingQueue<DatagramPacket> pkts;
+	private final BlockingQueue<DatagramPacket> pkts;
 	private final ExecutorService srvExecutor;
 	private final Set<MessageDispatcher<?>> expecters;
 	private final Set<MessageDispatcher<?>> nonConsumableExpecters;
@@ -58,7 +59,7 @@ public class KadServer implements Communicator {
 			KadSerializer serializer,
 			@Named("openkad.scheme.name") String kadScheme,
 			@Named("openkad.net.udp.sock") Provider<DatagramSocket> sockProvider,
-			//@Named("openkad.net.buffer") BlockingQueue<DatagramPacket> pkts,
+			@Named("openkad.net.buffer") BlockingQueue<DatagramPacket> pkts,
 			@Named("openkad.executors.server") ExecutorService srvExecutor,
 			@Named("openkad.net.expecters") Set<MessageDispatcher<?>> expecters,
 			@Named("openkad.net.expecters.nonConsumable") Set<MessageDispatcher<?>> nonConsumableExpecters,
@@ -72,7 +73,7 @@ public class KadServer implements Communicator {
 		this.kadScheme = kadScheme;
 		this.serializer = serializer;
 		this.sockProvider = sockProvider;
-		//this.pkts = pkts;
+		this.pkts = pkts;
 		this.srvExecutor = srvExecutor;
 		this.expecters = expecters;
 		this.nonConsumableExpecters = nonConsumableExpecters;
@@ -166,7 +167,7 @@ public class KadServer implements Communicator {
 					return;
 				} finally {
 					try { bin.close(); } catch (Exception e) {}
-					//pkts.add(pkt);
+					pkts.offer(pkt);
 				}
 				
 				// call all the expecters
@@ -196,16 +197,22 @@ public class KadServer implements Communicator {
 		while (isActive.get()) {
 			DatagramPacket pkt = null;
 			try {
-				pkt = new DatagramPacket(new byte[1024*64], 1024*64);//pkts.take();
+				pkt = pkts.poll();
+				if(pkt == null){
+					System.out.print("*");
+					pkt = new DatagramPacket(new byte[1024*64], 1024*64);
+				}
+				
 				sockProvider.get().receive(pkt);
 				handleIncomingPacket(pkt);
 			} catch (Exception e) {
 				// insert the taken pkt back
-				//if (pkt != null)
-				//	pkts.add(pkt);
+				if (pkt != null)
+					pkts.offer(pkt);
 				
-				//e.printStackTrace();
+				e.printStackTrace();
 			}
+
 		}
 	}
 

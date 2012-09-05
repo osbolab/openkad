@@ -36,14 +36,17 @@ import il.technion.ewolf.kbr.openkad.op.KadCacheFindValueOperation;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
@@ -204,10 +207,10 @@ public class KadNetModule extends AbstractModule {
 			//.to(KadFindValueOperation.class);
 
 			//.to(KadLocalCacheFindValueOperation.class);
-			//.to(KadCacheFindValueOperation.class);
+			.to(KadCacheFindValueOperation.class);
 
 			//.to(VisionEagerColorFindValueOperation.class);
-			.to(ForwardFindValueOperation.class);
+			//.to(ForwardFindValueOperation.class);
 		
 		bind(FindValueOperation.class)
 			.annotatedWith(Names.named("openkad.op.lastFindValue"))
@@ -356,6 +359,14 @@ public class KadNetModule extends AbstractModule {
 		
 		return n;
 	}
+	@Provides
+	@Named("openkad.net.buffer")
+	@Singleton
+	 BlockingQueue<DatagramPacket> providePacketQueue()
+	 {
+		return new ArrayBlockingQueue<DatagramPacket>(20);
+		
+	 }
 	
 	@Provides
 	@Named("openkad.refresh.task")

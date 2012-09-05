@@ -160,7 +160,7 @@ public class KadNet implements KeybasedRouting {
 		if ($.size() > bucketSize)
 			$.subList(bucketSize, $.size()).clear();
 		
-		System.out.println(op.getNrQueried());
+		//System.out.println(op.getNrQueried());
 		
 		return result;
 	}
