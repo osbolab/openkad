@@ -41,9 +41,6 @@ public class JoinOperation  {
 	private final KBuckets kBuckets;
 	private final Node localNode;
 	private final Provider<KadNode> kadNodeProvider;
-	private final Timer timer;
-	private final long refreshInterval;
-	private final TimerTask refreshTask;
 	// state
 	private Collection<Node> bootstrap = new HashSet<Node>();
 	
@@ -69,9 +66,6 @@ public class JoinOperation  {
 		this.zeroKey = zeroKey;
 		this.kadScheme = kadScheme;
 		this.localNode = localNode;
-		this.timer = timer;
-		this.refreshInterval = refreshInterval;
-		this.refreshTask = refreshTask;
 	}
 	/* (non-Javadoc)
 	 * @see il.technion.ewolf.kbr.openkad.op.JoinOperation#addBootstrap(java.util.Collection)

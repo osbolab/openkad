@@ -23,10 +23,11 @@ import com.google.inject.Provider;
 import com.google.inject.name.Named;
 
 /**
- * Handle find node requests by giving the known closest nodes to the requested key
- * from the KBuckets data structure
+ * Handle find node requests by giving the known closest nodes to the requested
+ * key from the KBuckets data structure
+ * 
  * @author eyal.kibbar@gmail.com
- *
+ * 
  */
 public class KademliaFindNodeHandler extends AbstractHandler implements FindNodeHandler {
 	private final Communicator kadServer;
@@ -34,68 +35,56 @@ public class KademliaFindNodeHandler extends AbstractHandler implements FindNode
 	private final KadCache cache;
 	private final KBuckets kBuckets;
 	private final int kBucketSize;
-	
+
 	private final AtomicInteger nrFindnodeHits;
 	private final AtomicInteger nrFindnodeMiss;
-	
-	
+
 	@Inject
-	KademliaFindNodeHandler(
-			Provider<MessageDispatcher<Void>> msgDispatcherProvider,
-			Communicator kadServer,
-			@Named("openkad.local.node") Node localNode,
-			KadCache cache,
-			KBuckets kBuckets,
-			@Named("openkad.bucket.kbuckets.maxsize") int kBucketSize,
-			
-			@Named("openkad.testing.nrFindnodeHits") AtomicInteger nrFindnodeHits,
-			@Named("openkad.testing.nrFindnodeMiss") AtomicInteger nrFindnodeMiss) {
-		
+	KademliaFindNodeHandler(final Provider<MessageDispatcher<Void>> msgDispatcherProvider, final Communicator kadServer,
+			@Named("openkad.local.node") final Node localNode, final KadCache cache, final KBuckets kBuckets,
+			@Named("openkad.bucket.kbuckets.maxsize") final int kBucketSize,
+
+			@Named("openkad.testing.nrFindnodeHits") final AtomicInteger nrFindnodeHits,
+			@Named("openkad.testing.nrFindnodeMiss") final AtomicInteger nrFindnodeMiss) {
+
 		super(msgDispatcherProvider);
 		this.kadServer = kadServer;
 		this.localNode = localNode;
 		this.cache = cache;
 		this.kBuckets = kBuckets;
 		this.kBucketSize = kBucketSize;
-		
+
 		this.nrFindnodeHits = nrFindnodeHits;
 		this.nrFindnodeMiss = nrFindnodeMiss;
 	}
 
 	@Override
-	public void completed(KadMessage msg, Void attachment) {
-		
-		FindNodeRequest findNodeRequest = ((FindNodeRequest)msg);
-		FindNodeResponse findNodeResponse = findNodeRequest
-				.generateResponse(localNode)
-				.setCachedResults(false);
-		
+	public void completed(final KadMessage msg, final Void attachment) {
+
+		final FindNodeRequest findNodeRequest = ((FindNodeRequest) msg);
+		final FindNodeResponse findNodeResponse = findNodeRequest.generateResponse(this.localNode).setCachedResults(false);
+
 		List<Node> cachedResults = null;
-		
-		if (!findNodeRequest.shouldSearchCache()) {
-			findNodeResponse.setNodes(kBuckets.getClosestNodesByKey(
-					findNodeRequest.getKey(), kBucketSize));
-			
-		} else {
-			 // requester ask to search in cache
-			cachedResults = cache.search(findNodeRequest.getKey());
-			
+
+		if (!findNodeRequest.shouldSearchCache())
+			findNodeResponse.setNodes(this.kBuckets.getClosestNodesByKey(findNodeRequest.getKey(), this.kBucketSize));
+		else {
+			// requester ask to search in cache
+			cachedResults = this.cache.search(findNodeRequest.getKey());
+
 			if (cachedResults == null) {
-				nrFindnodeMiss.incrementAndGet();
-				findNodeResponse.setNodes(kBuckets.getClosestNodesByKey(
-						findNodeRequest.getKey(), kBucketSize));
+				this.nrFindnodeMiss.incrementAndGet();
+				findNodeResponse.setNodes(this.kBuckets.getClosestNodesByKey(findNodeRequest.getKey(), this.kBucketSize));
 			} else {
-				nrFindnodeHits.incrementAndGet();
-				findNodeResponse
-					.setNodes(new ArrayList<Node>(cachedResults))
-					.setCachedResults(true);
-					
+				this.nrFindnodeHits.incrementAndGet();
+				findNodeResponse.setNodes(new ArrayList<Node>(cachedResults)).setCachedResults(true);
+
 			}
 		}
-		
+
 		try {
-			kadServer.send(msg.getSrc(), findNodeResponse);
-		} catch (IOException e) {
+			this.kadServer.send(msg.getSrc(), findNodeResponse);
+		} catch (final IOException e) {
 			// could not send back a response
 			// nothing to do
 			e.printStackTrace();
@@ -103,15 +92,14 @@ public class KademliaFindNodeHandler extends AbstractHandler implements FindNode
 	}
 
 	@Override
-	public void failed(Throwable exc, Void attachment) {
+	public void failed(final Throwable exc, final Void attachment) {
 		// should never b here
+		exc.printStackTrace();
 	}
 
 	@Override
 	protected Collection<MessageFilter> getFilters() {
 		// only accept FindNodeRequests messages
-		return Arrays.asList(new MessageFilter[] {
-				new TypeMessageFilter(FindNodeRequest.class)
-		});
+		return Arrays.asList(new MessageFilter[]{new TypeMessageFilter(FindNodeRequest.class)});
 	}
 }

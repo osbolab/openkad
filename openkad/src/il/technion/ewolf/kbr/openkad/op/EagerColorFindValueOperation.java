@@ -33,12 +33,12 @@ import com.google.inject.Provider;
 import com.google.inject.name.Named;
 
 /**
- * Find value operation according to the colors algorithm.
- * Does not wait for response before continuing with the operation
- * TODO: add a link to the published article
+ * Find value operation according to the colors algorithm. Does not wait for
+ * response before continuing with the operation TODO: add a link to the
+ * published article
  * 
  * @author eyal.kibbar@gmail.com
- *
+ * 
  */
 public class EagerColorFindValueOperation extends FindValueOperation implements CompletionHandler<KadMessage, Node> {
 
@@ -48,10 +48,10 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 	private final Set<Node> querying;
 	private int nrQueried;
 	private Node returnedCachedResults = null;
-	private List<Node> lastSentTo;
+	private final List<Node> lastSentTo;
 	private Comparator<Key> colorComparator;
-	private List<Node> firstSentTo;
-	
+	private final List<Node> firstSentTo;
+
 	// dependencies
 	private final Provider<FindNodeRequest> findNodeRequestProvider;
 	private final Provider<MessageDispatcher<Node>> msgDispatcherProvider;
@@ -67,25 +67,17 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 	// testing
 	private final AtomicInteger nrLocalCacheHits;
 	private final AtomicInteger nrRemoteCacheHits;
-	
+
 	@Inject
-	EagerColorFindValueOperation(
-			@Named("openkad.local.node") Node localNode,
-			@Named("openkad.bucket.kbuckets.maxsize") int kBucketSize,
-			@Named("openkad.cache.share") int nrShare,
-			@Named("openkad.color.nrcolors") int nrColors,
-			@Named("openkad.local.color") int myColor,
-			
-			Provider<FindNodeRequest> findNodeRequestProvider,
-			Provider<MessageDispatcher<Node>> msgDispatcherProvider,
-			Provider<StoreMessage> storeMessageProvider,
-			Communicator kadServer,
-			KBuckets kBuckets,
-			KadCache cache,
-			@Named("openkad.testing.nrLocalCacheHits") AtomicInteger nrLocalCacheHits,
-			@Named("openkad.testing.nrRemoteCacheHits") AtomicInteger nrRemoteCacheHits) {
-		
-		
+	EagerColorFindValueOperation(@Named("openkad.local.node") final Node localNode,
+			@Named("openkad.bucket.kbuckets.maxsize") final int kBucketSize, @Named("openkad.cache.share") final int nrShare,
+			@Named("openkad.color.nrcolors") final int nrColors, @Named("openkad.local.color") final int myColor,
+
+			final Provider<FindNodeRequest> findNodeRequestProvider, final Provider<MessageDispatcher<Node>> msgDispatcherProvider,
+			final Provider<StoreMessage> storeMessageProvider, final Communicator kadServer, final KBuckets kBuckets,
+			final KadCache cache, @Named("openkad.testing.nrLocalCacheHits") final AtomicInteger nrLocalCacheHits,
+			@Named("openkad.testing.nrRemoteCacheHits") final AtomicInteger nrRemoteCacheHits) {
+
 		this.localNode = localNode;
 		this.kBucketSize = kBucketSize;
 		this.kBuckets = kBuckets;
@@ -97,201 +89,191 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 		this.cache = cache;
 		this.nrColors = nrColors;
 		this.myColor = myColor;
-		
+
 		this.nrLocalCacheHits = nrLocalCacheHits;
 		this.nrRemoteCacheHits = nrRemoteCacheHits;
-		
-		alreadyQueried = new HashSet<Node>();
-		querying = new HashSet<Node>();
-		lastSentTo = new LinkedList<Node>();
-		firstSentTo = new ArrayList<Node>();
+
+		this.alreadyQueried = new HashSet<Node>();
+		this.querying = new HashSet<Node>();
+		this.lastSentTo = new LinkedList<Node>();
+		this.firstSentTo = new ArrayList<Node>();
 	}
-	
-	
+
+	@Override
 	public int getNrQueried() {
-		return nrQueried;
+		return this.nrQueried;
 	}
-	
-	
+
 	private synchronized Node takeUnqueried() {
-		for (int i=0; i < knownClosestNodes.size(); ++i) {
-			Node n = knownClosestNodes.get(i);
-			if (!querying.contains(n) && !alreadyQueried.contains(n)) {
-				querying.add(n);
+		for (int i = 0; i < this.knownClosestNodes.size(); ++i) {
+			final Node n = this.knownClosestNodes.get(i);
+			if (!this.querying.contains(n) && !this.alreadyQueried.contains(n)) {
+				this.querying.add(n);
 				return n;
 			}
 		}
 		return null;
 	}
-	
+
 	private synchronized Node takeColorUnqueried() {
 		List<Node> allUnqueried = new ArrayList<Node>();
-		allUnqueried.addAll(knownClosestNodes);
-		allUnqueried.removeAll(querying);
-		allUnqueried.removeAll(alreadyQueried);
-		
+		allUnqueried.addAll(this.knownClosestNodes);
+		allUnqueried.removeAll(this.querying);
+		allUnqueried.removeAll(this.alreadyQueried);
+
 		if (allUnqueried.isEmpty())
 			return null;
-		
+
 		Node $ = null;
-		
-		if (allUnqueried.size() > 1) {
-			allUnqueried = sort(allUnqueried, on(Node.class).getKey(), colorComparator);
-		}
+
+		if (allUnqueried.size() > 1)
+			allUnqueried = sort(allUnqueried, on(Node.class).getKey(), this.colorComparator);
 		$ = allUnqueried.get(0);
-		
+
 		// if the best we could find is not in the right color, then continue
-		// with the normal kademila lookup 
-		if ($.getKey().getColor(nrColors) != key.getColor(nrColors))
+		// with the normal kademila lookup
+		if ($.getKey().getColor(this.nrColors) != this.key.getColor(this.nrColors))
 			return takeUnqueried();
-		
-		querying.add($);
+
+		this.querying.add($);
 		return $;
 	}
-	
-	
+
 	private boolean hasMoreToQuery() {
-		return !querying.isEmpty() || !alreadyQueried.containsAll(knownClosestNodes);
+		return !this.querying.isEmpty() || !this.alreadyQueried.containsAll(this.knownClosestNodes);
 	}
-	
-	private void sendFindNode(Node to) {
-		FindNodeRequest findNodeRequest = findNodeRequestProvider.get()
-			.setSearchCache(true)
-			.setKey(key);
-		
-		msgDispatcherProvider.get()
-			.addFilter(new IdMessageFilter(findNodeRequest.getId()))
-			.addFilter(new TypeMessageFilter(FindNodeResponse.class))
-			.setConsumable(true)
-			.setCallback(to, this)
-			.send(to, findNodeRequest);
+
+	private void sendFindNode(final Node to) {
+		final FindNodeRequest findNodeRequest = this.findNodeRequestProvider.get().setSearchCache(true).setKey(this.key);
+
+		this.msgDispatcherProvider.get().addFilter(new IdMessageFilter(findNodeRequest.getId()))
+				.addFilter(new TypeMessageFilter(FindNodeResponse.class)).setConsumable(true).setCallback(to, this)
+				.send(to, findNodeRequest);
 	}
-	
+
 	@Override
 	public List<Node> doFindValue() {
 
-		List<Node> nodes = cache.search(key);
-		if (nodes != null && nodes.size() >= kBucketSize) {
-			nrLocalCacheHits.incrementAndGet();
+		final List<Node> nodes = this.cache.search(this.key);
+		if (nodes != null && nodes.size() >= this.kBucketSize) {
+			this.nrLocalCacheHits.incrementAndGet();
 			return nodes;
 		}
-		
-		knownClosestNodes = kBuckets.getClosestNodesByKey(key, kBucketSize);
-		knownClosestNodes.add(localNode);
-		Collection<Node> bootstrap = getBootstrap();
-		bootstrap.removeAll(knownClosestNodes);
-		knownClosestNodes.addAll(bootstrap);
-		alreadyQueried.add(localNode);
-		
-		KeyComparator keyComparator = new KeyComparator(key);
-		colorComparator = new KeyColorComparator(key, nrColors);
-		
+
+		this.knownClosestNodes = this.kBuckets.getClosestNodesByKey(this.key, this.kBucketSize);
+		this.knownClosestNodes.add(this.localNode);
+		final Collection<Node> bootstrap = getBootstrap();
+		bootstrap.removeAll(this.knownClosestNodes);
+		this.knownClosestNodes.addAll(bootstrap);
+		this.alreadyQueried.add(this.localNode);
+
+		final KeyComparator keyComparator = new KeyComparator(this.key);
+		this.colorComparator = new KeyColorComparator(this.key, this.nrColors);
+
 		do {
-			synchronized(this) {
-				knownClosestNodes = sort(knownClosestNodes, on(Node.class).getKey(), keyComparator);
-				if (knownClosestNodes.size() >= kBucketSize)
-					knownClosestNodes.subList(kBucketSize, knownClosestNodes.size()).clear();
-				
-				if (returnedCachedResults != null)
+			synchronized (this) {
+				this.knownClosestNodes = sort(this.knownClosestNodes, on(Node.class).getKey(), keyComparator);
+				if (this.knownClosestNodes.size() >= this.kBucketSize)
+					this.knownClosestNodes.subList(this.kBucketSize, this.knownClosestNodes.size()).clear();
+
+				if (this.returnedCachedResults != null)
 					break;
-				
+
 				if (!hasMoreToQuery())
 					break;
 			}
-			
-			Node n = takeColorUnqueried();
-			
-			if (n != null) {
+
+			final Node n = takeColorUnqueried();
+
+			if (n != null)
 				sendFindNode(n);
-			} else {
+			else
 				synchronized (this) {
-					if (!querying.isEmpty()) {
+					if (!this.querying.isEmpty())
 						try {
 							wait();
-						} catch (InterruptedException e) {
+						} catch (final InterruptedException e) {
 							e.printStackTrace();
 						}
-					}
 				}
-			}
-			
+
 		} while (true);
-		
-		knownClosestNodes = Collections.unmodifiableList(knownClosestNodes);
-		
+
+		this.knownClosestNodes = Collections.unmodifiableList(this.knownClosestNodes);
+
 		// only share if i dont have the right color
-		if (myColor != key.getColor(nrColors))
-			sendStoreResults(lastSentTo);
-		
-		cache.insert(key, knownClosestNodes);
-		
-		if (returnedCachedResults != null)
-			nrRemoteCacheHits.incrementAndGet();
+		if (this.myColor != this.key.getColor(this.nrColors))
+			sendStoreResults(this.lastSentTo);
+
+		this.cache.insert(this.key, this.knownClosestNodes);
+
+		if (this.returnedCachedResults != null)
+			this.nrRemoteCacheHits.incrementAndGet();
+		else {
+
+		}
 
 		synchronized (this) {
-			nrQueried = alreadyQueried.size()+querying.size()-1;
+			this.nrQueried = this.alreadyQueried.size() + this.querying.size() - 1;
 		}
-		
-		return knownClosestNodes;
+
+		return this.knownClosestNodes;
 	}
-	
-	
-	private void sendStoreResults(List<Node> toShareWith) {
-		toShareWith.remove(returnedCachedResults);
-		if (toShareWith.size() > nrShare)
-			toShareWith.subList(nrShare, toShareWith.size()).clear();
-		
-		StoreMessage storeMessage = storeMessageProvider.get()
-			.setKey(key)
-			.setNodes(knownClosestNodes);
-		
-		for (Node n : toShareWith) {
+
+	private void sendStoreResults(final List<Node> toShareWith) {
+		toShareWith.remove(this.returnedCachedResults);
+		if (toShareWith.size() > this.nrShare)
+			toShareWith.subList(this.nrShare, toShareWith.size()).clear();
+
+		final StoreMessage storeMessage = this.storeMessageProvider.get().setKey(this.key).setNodes(this.knownClosestNodes);
+
+		for (final Node n : toShareWith) {
 			// dont send if the remote node has a different color
-			if (n.getKey().getColor(nrColors) != key.getColor(nrColors))
+			if (n.getKey().getColor(this.nrColors) != this.key.getColor(this.nrColors))
 				continue;
 			try {
-				kadServer.send(n, storeMessage);
-			} catch (Exception e) {}
+				this.kadServer.send(n, storeMessage);
+			} catch (final Exception e) {
+			}
 		}
 	}
 
 	@Override
-	public synchronized void completed(KadMessage msg, Node n) {
+	public synchronized void completed(final KadMessage msg, final Node n) {
 		notifyAll();
-		querying.remove(n);
-		alreadyQueried.add(n);
-		
-		if (returnedCachedResults != null)
+		this.querying.remove(n);
+		this.alreadyQueried.add(n);
+
+		if (this.returnedCachedResults != null)
 			return;
-		
-		
-		List<Node> nodes = ((FindNodeResponse)msg).getNodes();
-		nodes.removeAll(querying);
-		nodes.removeAll(alreadyQueried);
-		nodes.removeAll(knownClosestNodes);
-		
-		knownClosestNodes.addAll(nodes);
-		
-		if (((FindNodeResponse)msg).isCachedResults()) {
-			returnedCachedResults = n;
+
+		final List<Node> nodes = ((FindNodeResponse) msg).getNodes();
+		nodes.removeAll(this.querying);
+		nodes.removeAll(this.alreadyQueried);
+		nodes.removeAll(this.knownClosestNodes);
+
+		this.knownClosestNodes.addAll(nodes);
+
+		if (((FindNodeResponse) msg).isCachedResults()) {
+			this.returnedCachedResults = n;
 			return;
 		}
-			
-		if (n.getKey().getColor(nrColors) == key.getColor(nrColors)) {
-			if (firstSentTo.size() < nrShare)
-				firstSentTo.add(n);
-			
-			lastSentTo.add(n);
-			if (lastSentTo.size() > nrShare)
-				lastSentTo.remove(0);
+
+		if (n.getKey().getColor(this.nrColors) == this.key.getColor(this.nrColors)) {
+			if (this.firstSentTo.size() < this.nrShare)
+				this.firstSentTo.add(n);
+
+			this.lastSentTo.add(n);
+			if (this.lastSentTo.size() > this.nrShare)
+				this.lastSentTo.remove(0);
 		}
-		
+
 	}
-	
+
 	@Override
-	public synchronized void failed(Throwable exc, Node n) {
+	public synchronized void failed(final Throwable exc, final Node n) {
 		notifyAll();
-		querying.remove(n);
-		alreadyQueried.add(n);
+		this.querying.remove(n);
+		this.alreadyQueried.add(n);
 	}
 }

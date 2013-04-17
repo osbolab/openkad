@@ -33,6 +33,8 @@ public class KeybasedRoutingTest {
 					.setProperty("openkad.bucket.kbuckets.maxsize", "3")
 					.setProperty("openkad.seed", ""+(i+basePort))
 					.setProperty("openkad.net.udp.port", ""+(i+basePort)));
+			
+			
 			KeybasedRouting kbr = injector.getInstance(KeybasedRouting.class);
 			kbr.create();
 			kbrs.add(kbr);

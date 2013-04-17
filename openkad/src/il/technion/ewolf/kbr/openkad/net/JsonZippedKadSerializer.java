@@ -33,25 +33,27 @@ import com.google.inject.Inject;
  * @author eyal.kibbar@gmail.com
  * 
  */
-public class JsonKadSerializer extends KadSerializer implements JsonSerializer<Serializable>, JsonDeserializer<Serializable> {
+public class JsonZippedKadSerializer extends KadSerializer implements JsonSerializer<Serializable>, JsonDeserializer<Serializable> {
 
 	private final Gson gson;
 
 	private static final String classPackage = KadMessage.class.getPackage().getName() + ".";
 
 	@Inject
-	JsonKadSerializer() {
+	JsonZippedKadSerializer() {
 		this.gson = new GsonBuilder().registerTypeAdapter(Serializable.class, this)
 				.registerTypeHierarchyAdapter(Serializable.class, this).create();
 	}
 
 	@Override
 	public KadMessage read(final InputStream in) throws IOException, ClassCastException, ClassNotFoundException {
+		// GZIPInputStream din = null;
 		Reader utf8Reader = null;
 		JsonReader reader = null;
 
 		KadMessage msg = null;
 		try {
+			// din = new GZIPInputStream(in);
 			utf8Reader = new InputStreamReader(in, "UTF-8");
 			reader = new JsonReader(utf8Reader);
 
@@ -63,6 +65,7 @@ public class JsonKadSerializer extends KadSerializer implements JsonSerializer<S
 		} finally {
 			reader.close();
 			utf8Reader.close();
+			// din.close();
 			in.close();
 		}
 
@@ -72,11 +75,13 @@ public class JsonKadSerializer extends KadSerializer implements JsonSerializer<S
 	@Override
 	public void write(final KadMessage msg, final OutputStream out) throws IOException {
 
+		// System.out.println(KadMessage.class.getPackage().getName());
+		// GZIPOutputStream dout = null;
 		Writer utf8Writer = null;
 		JsonWriter writer = null;
 
 		try {
-
+			// dout = new GZIPOutputStream(out);
 			utf8Writer = new OutputStreamWriter(out, "UTF-8");
 			writer = new JsonWriter(utf8Writer);
 
@@ -91,7 +96,7 @@ public class JsonKadSerializer extends KadSerializer implements JsonSerializer<S
 			writer.close();
 			utf8Writer.close();
 			out.close();
-
+			// dout.close();
 		}
 	}
 
@@ -100,7 +105,7 @@ public class JsonKadSerializer extends KadSerializer implements JsonSerializer<S
 			throws JsonParseException {
 		final byte[] src = Base64.decodeBase64(json.getAsJsonPrimitive().getAsString());
 		try {
-			return JsonKadSerializer.this.deserialize(src);
+			return JsonZippedKadSerializer.this.deserialize(src);
 		} catch (final Exception e) {
 			throw new JsonParseException(e);
 		}
@@ -108,8 +113,9 @@ public class JsonKadSerializer extends KadSerializer implements JsonSerializer<S
 
 	@Override
 	public JsonElement serialize(final Serializable src, final Type typeOfSrc, final JsonSerializationContext context) {
-		final byte[] serialized = JsonKadSerializer.this.serialize(src);
+		final byte[] serialized = JsonZippedKadSerializer.this.serialize(src);
 		final String s = Base64.encodeBase64String(serialized);
+		// System.out.println("sending: "+s);
 		return new JsonPrimitive(s);
 	}
 
