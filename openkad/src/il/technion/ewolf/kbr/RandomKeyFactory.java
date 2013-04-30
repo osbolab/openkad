@@ -22,121 +22,128 @@ public class RandomKeyFactory implements KeyFactory {
 	private final int keyByteLength;
 	private final Random rnd;
 	private final MessageDigest md;
-	
 
 	/**
 	 * 
-	 * @param keyByteLength the length in bytes of the generated keys
-	 * @param rnd the random object to be used
-	 * @param hashAlgo the algorithm to be used for digesting when generating from an array of topics
-	 * @throws NoSuchAlgorithmException if the digest algorithm was not found
+	 * @param keyByteLength
+	 *            the length in bytes of the generated keys
+	 * @param rnd
+	 *            the random object to be used
+	 * @param hashAlgo
+	 *            the algorithm to be used for digesting when generating from an
+	 *            array of topics
+	 * @throws NoSuchAlgorithmException
+	 *             if the digest algorithm was not found
 	 */
-	public RandomKeyFactory(int keyByteLength, Random rnd, String hashAlgo) throws NoSuchAlgorithmException {
+	public RandomKeyFactory(final int keyByteLength, final Random rnd, final String hashAlgo) throws NoSuchAlgorithmException {
 		this.keyByteLength = keyByteLength;
 		this.rnd = rnd;
 		this.md = MessageDigest.getInstance(hashAlgo);
 	}
-	
+
 	@Override
 	public Key getZeroKey() {
-		byte[] b = new byte[keyByteLength];
-		Arrays.fill(b, (byte)0);
-		return new Key(b);
-	}
-	
-	@Override
-	public Key generate() {
-		byte[] b = new byte[keyByteLength];
-		rnd.nextBytes(b);
-		return new Key(b);
-	}
-	
-	@Override
-	public Key generate(int pow2Max) {
-		
-		if (pow2Max < 0 || keyByteLength*8 <= pow2Max)
-			throw new IllegalArgumentException();
-		
-		byte[] b = new byte[keyByteLength];
-		Arrays.fill(b, (byte)0);
-		
-		byte[] r = new BigInteger(pow2Max, rnd).toByteArray();
-		
-		for (int i_b=b.length-1, i_r=r.length-1; i_r >=0 && i_b >= 0; b[i_b--] = r[i_r--]);
-		
-		b[b.length - pow2Max/8 - 1] |= 1 << (pow2Max % 8);
-		
+		final byte[] b = new byte[keyByteLength];
+		Arrays.fill(b, (byte) 0);
 		return new Key(b);
 	}
 
 	@Override
-	public Key get(byte[] bytes) {
+	public Key generate() {
+		final byte[] b = new byte[keyByteLength];
+		rnd.nextBytes(b);
+		return new Key(b);
+	}
+
+	@Override
+	public Key generate(final int pow2Max) {
+
+		if (pow2Max < 0 || keyByteLength * 8 <= pow2Max)
+			throw new IllegalArgumentException();
+
+		final byte[] b = new byte[keyByteLength];
+		Arrays.fill(b, (byte) 0);
+
+		final byte[] r = new BigInteger(pow2Max, rnd).toByteArray();
+
+		for (int i_b = b.length - 1, i_r = r.length - 1; i_r >= 0 && i_b >= 0; b[i_b--] = r[i_r--]);
+
+		b[b.length - pow2Max / 8 - 1] |= 1 << (pow2Max % 8);
+
+		return new Key(b);
+	}
+
+	@Override
+	public Key get(final byte[] bytes) {
 		if (bytes.length != keyByteLength)
 			throw new IllegalArgumentException("key length is invalid");
 		return new Key(bytes);
 	}
 
 	@Override
-	public Key get(String base64Encoded) {
-		byte[] decodeBase64 = Base64.decodeBase64(base64Encoded);
+	public Key get(final String base64Encoded) {
+		final byte[] decodeBase64 = Base64.decodeBase64(base64Encoded);
 		if (decodeBase64.length != keyByteLength)
 			throw new IllegalArgumentException("key length is invalid");
 		return new Key(decodeBase64);
 	}
-	
 
 	@Override
-	public Key create(String ... topics) {
-		
+	public Key create(final String... topics) {
+
 		ByteArrayOutputStream out = null;
 		ByteArrayInputStream in = null;
-		
+
 		try {
 			out = new ByteArrayOutputStream();
-			for (String topic : topics)
+			for (final String topic : topics)
 				out.write(topic.getBytes());
-			
+
 			out.flush();
-			
+
 			in = new ByteArrayInputStream(out.toByteArray());
-			
+
 			return create(in);
-			
-		}catch (IOException e) {
+
+		} catch (final IOException e) {
 			throw new AssertionError();
 		} finally {
-			try { out.close(); } catch (Exception e) {}
-			try { in.close(); } catch (Exception e) {}
+			try {
+				out.close();
+			} catch (final Exception e) {
+			}
+			try {
+				in.close();
+			} catch (final Exception e) {
+			}
 		}
 	}
-	
+
 	@Override
-	public Key create(InputStream data) throws IOException {
-		byte[] buff = new byte[512];
+	public Key create(final InputStream data) throws IOException {
+		final byte[] buff = new byte[512];
 		int n;
-		while ((n = data.read(buff)) > 0) {
+		while ((n = data.read(buff)) > 0)
 			md.update(buff, 0, n);
-		}
 		byte[] b = md.digest();
-		if (b.length > keyByteLength) {
+		if (b.length > keyByteLength)
 			b = Arrays.copyOfRange(b, 0, keyByteLength);
-		}
 		return new Key(b);
 	}
-	
+
 	@Override
 	public int getByteLength() {
 		return keyByteLength;
 	}
-	
+
 	@Override
 	public int getBitLength() {
 		return getByteLength() * 8;
 	}
 
 	@Override
-	public boolean isValid(Key key) {
+	public boolean isValid(final Key key) {
 		return key.getByteLength() == getByteLength();
 	}
-	
+
 }

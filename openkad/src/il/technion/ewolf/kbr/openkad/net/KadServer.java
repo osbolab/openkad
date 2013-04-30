@@ -53,7 +53,7 @@ public class KadServer implements Communicator {
 
 	// state
 	private final AtomicBoolean isActive = new AtomicBoolean(false);
-	private final BlockingQueue<DatagramPacket> pktsout;
+	// private final BlockingQueue<DatagramPacket> pktsout;
 
 	@Inject
 	KadServer(
@@ -76,7 +76,7 @@ public class KadServer implements Communicator {
 		this.serializer = serializer;
 		this.sockProvider = sockProvider;
 		this.pkts = pkts;
-		this.pktsout = pktsout;
+		// this.pktsout = pktsout;
 		this.srvExecutor = srvExecutor;
 		this.expecters = expecters;
 		this.nonConsumableExpecters = nonConsumableExpecters;
@@ -122,15 +122,11 @@ public class KadServer implements Communicator {
 			final byte[] bytes = bout.toByteArray();
 			this.nrBytesSent.addAndGet(bytes.length);
 
-			DatagramPacket pkt = this.pktsout.poll();
-			if (pkt == null)
-				pkt = new DatagramPacket(bytes, 0, bytes.length);
-			else
-				pkt.setData(bytes);
+			final DatagramPacket pkt = new DatagramPacket(bytes, 0, bytes.length);
 
 			pkt.setSocketAddress(to.getSocketAddress(this.kadScheme));
 			this.sockProvider.get().send(pkt);
-			this.pktsout.offer(pkt);
+
 		} finally {
 			try {
 

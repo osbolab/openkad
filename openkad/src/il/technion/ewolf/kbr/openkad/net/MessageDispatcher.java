@@ -186,6 +186,27 @@ public class MessageDispatcher<A> {
 		timer.schedule(timeoutTimerTask, timeout);
 	}
 	
+	public boolean trySend(Node to, KadRequest req) {
+		setConsumable(true);
+		try {
+			if (!outstandingRequests.offer(this))
+				return false;
+			else
+			{
+				//outstandingRequests.put(this);
+				expect();
+				communicator.send(to, req);
+				setupTimeout();
+				return true;
+			}
+
+		} catch (Exception e) {
+			cancel(e);
+			// if something bad happened - feel free to try again. 
+			return true;
+		}
+	}
+	
 	public void send(Node to, KadRequest req) {
 		setConsumable(true);
 		try {

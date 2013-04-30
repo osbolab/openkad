@@ -82,9 +82,9 @@ public class JsonKadSerializer extends KadSerializer implements JsonSerializer<S
 
 			writer.beginArray();
 			final Class<?> clazz = msg.getClass();
-			gson.toJson(clazz.getSimpleName(), String.class, writer);
+			this.gson.toJson(clazz.getSimpleName(), String.class, writer);
 			// System.out.println("writing class: "+clazz);
-			gson.toJson(msg, clazz, writer);
+			this.gson.toJson(msg, clazz, writer);
 			writer.endArray();
 
 		} finally {

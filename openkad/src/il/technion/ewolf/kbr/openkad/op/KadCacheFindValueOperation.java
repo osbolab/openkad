@@ -15,6 +15,7 @@ import il.technion.ewolf.kbr.openkad.net.Communicator;
 import il.technion.ewolf.kbr.openkad.net.MessageDispatcher;
 import il.technion.ewolf.kbr.openkad.net.filter.IdMessageFilter;
 import il.technion.ewolf.kbr.openkad.net.filter.TypeMessageFilter;
+import il.technion.ewolf.kbr.openkad.op.FindValueOperation;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -28,11 +29,12 @@ import com.google.inject.Provider;
 import com.google.inject.name.Named;
 
 /**
- * Kademlia find node operation with the caching algorithm suggested in the article:
- * send a store message to the last node who did not have the value (list of nodes)
+ * Kademlia find node operation with the caching algorithm suggested in the
+ * article: send a store message to the last node who did not have the value
+ * (list of nodes)
  * 
  * @author eyal.kibbar@gmail.com
- *
+ * 
  */
 public class KadCacheFindValueOperation extends FindValueOperation implements CompletionHandler<KadMessage, Node> {
 
@@ -40,11 +42,11 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 	private List<Node> knownClosestNodes;
 	private final Set<Node> alreadyQueried;
 	private final Set<Node> querying;
-	private int nrQueried;
-	private List<Node> lastSentTo;
+	private final List<Node> lastSentTo;
 	private Node returnedCachedResults = null;
 	private KeyComparator keyComparator;
-	
+	private final AtomicInteger nrMsgsSent;
+
 	// dependencies
 	private final Provider<FindNodeRequest> findNodeRequestProvider;
 	private final Provider<MessageDispatcher<Node>> msgDispatcherProvider;
@@ -55,26 +57,20 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 	private final Provider<StoreMessage> storeMessageProvider;
 	private final Communicator kadServer;
 	private final KadCache cache;
-	
+
 	private final AtomicInteger nrLocalCacheHits;
 	private final AtomicInteger nrRemoteCacheHits;
-	
+
 	@Inject
-	KadCacheFindValueOperation(
-			@Named("openkad.local.node") Node localNode,
-			@Named("openkad.bucket.kbuckets.maxsize") int kBucketSize,
-			@Named("openkad.cache.share") int nrShare,
-			Provider<FindNodeRequest> findNodeRequestProvider,
-			Provider<MessageDispatcher<Node>> msgDispatcherProvider,
-			KBuckets kBuckets,
-			Provider<StoreMessage> storeMessageProvider,
-			Communicator kadServer,
-			KadCache cache,
-			
-			@Named("openkad.testing.nrLocalCacheHits") AtomicInteger nrLocalCacheHits,
-			@Named("openkad.testing.nrRemoteCacheHits") AtomicInteger nrRemoteCacheHits) {
-		
-		
+	KadCacheFindValueOperation(@Named("openkad.local.node") final Node localNode,
+			@Named("openkad.bucket.kbuckets.maxsize") final int kBucketSize, @Named("openkad.cache.share") final int nrShare,
+			final Provider<FindNodeRequest> findNodeRequestProvider, final Provider<MessageDispatcher<Node>> msgDispatcherProvider,
+			final KBuckets kBuckets, final Provider<StoreMessage> storeMessageProvider, final Communicator kadServer,
+			final KadCache cache,
+
+			@Named("openkad.testing.nrLocalCacheHits") final AtomicInteger nrLocalCacheHits,
+			@Named("openkad.testing.nrRemoteCacheHits") final AtomicInteger nrRemoteCacheHits) {
+
 		this.localNode = localNode;
 		this.kBucketSize = kBucketSize;
 		this.kBuckets = kBuckets;
@@ -84,161 +80,172 @@ public class KadCacheFindValueOperation extends FindValueOperation implements Co
 		this.storeMessageProvider = storeMessageProvider;
 		this.kadServer = kadServer;
 		this.cache = cache;
-		
-		alreadyQueried = new HashSet<Node>();
-		querying = new HashSet<Node>();
-		
-		lastSentTo = new LinkedList<Node>();
-		
+		this.nrMsgsSent = new AtomicInteger();
+
+		this.alreadyQueried = new HashSet<Node>();
+		this.querying = new HashSet<Node>();
+
+		this.lastSentTo = new LinkedList<Node>();
+
 		this.nrLocalCacheHits = nrLocalCacheHits;
 		this.nrRemoteCacheHits = nrRemoteCacheHits;
-		
+
 	}
-	
-	
+
+	@Override
 	public int getNrQueried() {
-		return nrQueried;
+		return this.nrMsgsSent.get();
 	}
-	
-	
+
 	private synchronized Node takeUnqueried() {
-		for (int i=0; i < knownClosestNodes.size(); ++i) {
-			Node n = knownClosestNodes.get(i);
-			if (!querying.contains(n) && !alreadyQueried.contains(n)) {
-				querying.add(n);
+		for (int i = 0; i < this.knownClosestNodes.size(); ++i) {
+			final Node n = this.knownClosestNodes.get(i);
+			if (!this.querying.contains(n) && !this.alreadyQueried.contains(n)) {
+				this.querying.add(n);
 				return n;
 			}
 		}
 		return null;
 	}
-	
+
 	private boolean hasMoreToQuery() {
-		return !querying.isEmpty() || !alreadyQueried.containsAll(knownClosestNodes);
+		return !this.querying.isEmpty() || !this.alreadyQueried.containsAll(this.knownClosestNodes);
 	}
-	
-	private void sendFindNode(Node to) {
-		FindNodeRequest findNodeRequest = findNodeRequestProvider.get()
-			.setSearchCache(true)
-			.setKey(key);
-		
-		msgDispatcherProvider.get()
-			.addFilter(new IdMessageFilter(findNodeRequest.getId()))
-			.addFilter(new TypeMessageFilter(FindNodeResponse.class))
-			.setConsumable(true)
-			.setCallback(to, this)
-			.send(to, findNodeRequest);
+
+	private boolean trySendFindNode(final Node to) {
+		final FindNodeRequest findNodeRequest = this.findNodeRequestProvider.get().setSearchCache(true).setKey(this.key);
+
+		return this.msgDispatcherProvider.get().addFilter(new IdMessageFilter(findNodeRequest.getId()))
+		.addFilter(new TypeMessageFilter(FindNodeResponse.class)).setConsumable(true).setCallback(to, this)
+		.trySend(to, findNodeRequest);
 	}
-	
-	private void sendStoreResults(List<Node> toShareWith) {
-		toShareWith.remove(returnedCachedResults);
-		if (toShareWith.size() > nrShare)
-			toShareWith.subList(nrShare, toShareWith.size()).clear();
-		
-		StoreMessage storeMessage = storeMessageProvider.get()
-			.setKey(key)
-			.setNodes(knownClosestNodes);
-		for (Node n : toShareWith) {
-			System.out.println("sharing with: "+n);
+
+	private void sendFindNode(final Node to) {
+		final FindNodeRequest findNodeRequest = this.findNodeRequestProvider.get().setSearchCache(true).setKey(this.key);
+
+		this.msgDispatcherProvider.get().addFilter(new IdMessageFilter(findNodeRequest.getId()))
+		.addFilter(new TypeMessageFilter(FindNodeResponse.class)).setConsumable(true).setCallback(to, this)
+		.send(to, findNodeRequest);
+	}
+
+	private void sendStoreResults(final List<Node> toShareWith) {
+		toShareWith.remove(this.returnedCachedResults);
+		if (toShareWith.size() > this.nrShare)
+			toShareWith.subList(this.nrShare, toShareWith.size()).clear();
+
+		final StoreMessage storeMessage = this.storeMessageProvider.get().setKey(this.key).setNodes(this.knownClosestNodes);
+		for (final Node n : toShareWith) {
+			System.out.println("sharing with: " + n);
 			try {
-				kadServer.send(n, storeMessage);
-			} catch (Exception e) {}
+				this.kadServer.send(n, storeMessage);
+			} catch (final Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
-	
+
 	private void sortKnownClosestNodes() {
-		knownClosestNodes = sort(knownClosestNodes, on(Node.class).getKey(), keyComparator);
-		if (knownClosestNodes.size() >= kBucketSize)
-			knownClosestNodes.subList(kBucketSize, knownClosestNodes.size()).clear();
+		this.knownClosestNodes = sort(this.knownClosestNodes, on(Node.class).getKey(), this.keyComparator);
+		if (this.knownClosestNodes.size() >= this.kBucketSize)
+			this.knownClosestNodes.subList(this.kBucketSize, this.knownClosestNodes.size()).clear();
 	}
-	
+
 	@Override
 	public List<Node> doFindValue() {
 
-		List<Node> nodes = cache.search(key);
-		if (nodes != null && nodes.size() >= kBucketSize) {
-			nrLocalCacheHits.incrementAndGet();
+		final List<Node> nodes = this.cache.search(this.key);
+		if (nodes != null && nodes.size() >= this.kBucketSize) {
+			this.nrLocalCacheHits.incrementAndGet();
 			return nodes;
 		}
-		
-		knownClosestNodes = kBuckets.getClosestNodesByKey(key, kBucketSize);
-		knownClosestNodes.add(localNode);
-		alreadyQueried.add(localNode);
-		keyComparator = new KeyComparator(key);
-		
+
+		this.keyComparator = new KeyComparator(this.key);
+		this.knownClosestNodes = this.kBuckets.getClosestNodesByKey(this.key, this.kBucketSize);
+		this.knownClosestNodes.add(this.localNode);
+		sortKnownClosestNodes();
+		this.alreadyQueried.add(this.localNode);
+
 		do {
-			Node n = takeUnqueried();
-			
-			if (n != null) {
-				sendFindNode(n);
-			} else {
-				synchronized (this) {
-					if (!querying.isEmpty()) {
+			final Node node = takeUnqueried();
+
+			synchronized (this) {
+				// check if finished already...
+				if (!hasMoreToQuery() || this.returnedCachedResults != null)
+					break;
+				
+				if (node != null){
+					if(!trySendFindNode(node)){
 						try {
-							wait();
+							if(this.querying.size() == 1)
+							{
+								//If only I try to send I send and block
+								this.nrMsgsSent.incrementAndGet();
+								sendFindNode(node);
+							}
+							else
+							{
+								//If there are pending msgs, i wait for their reply
+								this.querying.remove(node);
+								wait();
+							}
 						} catch (InterruptedException e) {
+							e.printStackTrace();
 						}
+					}else{
+						this.nrMsgsSent.incrementAndGet();
 					}
 				}
+				else
+					if (!this.querying.isEmpty())
+						try {
+							wait();
+						} catch (final InterruptedException e) {
+							e.printStackTrace();
+						}
 			}
-			
-			synchronized(this) {
-				sortKnownClosestNodes();
-				
-				if (!hasMoreToQuery() || returnedCachedResults != null)
-					break;
-			}
-			
 		} while (true);
-		
-		knownClosestNodes = Collections.unmodifiableList(knownClosestNodes);
-		
-		sendStoreResults(lastSentTo);
-		
-		if (returnedCachedResults != null)
-			nrRemoteCacheHits.incrementAndGet();
 
-		synchronized (this) {
-			nrQueried = alreadyQueried.size() + querying.size() - 1;
-		}
-		
-		return knownClosestNodes;
+		this.knownClosestNodes = Collections.unmodifiableList(this.knownClosestNodes);
+
+		sendStoreResults(this.lastSentTo);
+
+		if (this.returnedCachedResults != null)
+			this.nrRemoteCacheHits.incrementAndGet();
+
+		return this.knownClosestNodes;
 	}
-	
-	
-	
+
 	@Override
-	public synchronized void completed(KadMessage msg, Node n) {
+	public synchronized void completed(final KadMessage msg, final Node n) {
 		notifyAll();
-		querying.remove(n);
-		alreadyQueried.add(n);
-		
-		if (returnedCachedResults != null)
+		this.querying.remove(n);
+		this.alreadyQueried.add(n);
+
+		if (this.returnedCachedResults != null)
 			return;
-		
-		List<Node> nodes = ((FindNodeResponse)msg).getNodes();
-		nodes.removeAll(querying);
-		nodes.removeAll(alreadyQueried);
-		nodes.removeAll(knownClosestNodes);
-		
-		knownClosestNodes.addAll(nodes);
-		
-		if (((FindNodeResponse)msg).isCachedResults()) {
-			returnedCachedResults = n;
-		} else {
+
+		final List<Node> nodes = ((FindNodeResponse) msg).getNodes();
+		nodes.removeAll(this.querying);
+		nodes.removeAll(this.alreadyQueried);
+		nodes.removeAll(this.knownClosestNodes);
+		this.knownClosestNodes.addAll(nodes);
+		sortKnownClosestNodes();
+
+		if (((FindNodeResponse) msg).isCachedResults())
+			this.returnedCachedResults = n;
+		else {
 			// listing n as last contacted nodes in the algorithm
 			// that did not have the results in its cache
-			lastSentTo.add(n);
-			if (lastSentTo.size() > nrShare)
-				lastSentTo.remove(0);
+			this.lastSentTo.add(n);
+			if (this.lastSentTo.size() > this.nrShare)
+				this.lastSentTo.remove(0);
 		}
-		
 	}
-	
+
 	@Override
-	public synchronized void failed(Throwable exc, Node n) {
+	public synchronized void failed(final Throwable exc, final Node n) {
 		notifyAll();
-		querying.remove(n);
-		alreadyQueried.add(n);
-		
+		this.querying.remove(n);
+		this.alreadyQueried.add(n);
 	}
 }

@@ -46,11 +46,12 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 	private List<Node> knownClosestNodes;
 	private final Set<Node> alreadyQueried;
 	private final Set<Node> querying;
-	private int nrQueried;
 	private Node returnedCachedResults = null;
 	private final List<Node> lastSentTo;
 	private Comparator<Key> colorComparator;
+	private KeyComparator keyComparator;
 	private final List<Node> firstSentTo;
+	private final AtomicInteger nrMsgsSent;
 
 	// dependencies
 	private final Provider<FindNodeRequest> findNodeRequestProvider;
@@ -97,11 +98,12 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 		this.querying = new HashSet<Node>();
 		this.lastSentTo = new LinkedList<Node>();
 		this.firstSentTo = new ArrayList<Node>();
+		this.nrMsgsSent = new AtomicInteger();
 	}
 
 	@Override
 	public int getNrQueried() {
-		return this.nrQueried;
+		return this.nrMsgsSent.get();
 	}
 
 	private synchronized Node takeUnqueried() {
@@ -142,13 +144,27 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 	private boolean hasMoreToQuery() {
 		return !this.querying.isEmpty() || !this.alreadyQueried.containsAll(this.knownClosestNodes);
 	}
+	
+	private boolean trySendFindNode(final Node to) {
+		final FindNodeRequest findNodeRequest = this.findNodeRequestProvider.get().setSearchCache(true).setKey(this.key);
+
+		return this.msgDispatcherProvider.get().addFilter(new IdMessageFilter(findNodeRequest.getId()))
+		.addFilter(new TypeMessageFilter(FindNodeResponse.class)).setConsumable(true).setCallback(to, this)
+		.trySend(to, findNodeRequest);
+	}
 
 	private void sendFindNode(final Node to) {
 		final FindNodeRequest findNodeRequest = this.findNodeRequestProvider.get().setSearchCache(true).setKey(this.key);
 
 		this.msgDispatcherProvider.get().addFilter(new IdMessageFilter(findNodeRequest.getId()))
-				.addFilter(new TypeMessageFilter(FindNodeResponse.class)).setConsumable(true).setCallback(to, this)
-				.send(to, findNodeRequest);
+		.addFilter(new TypeMessageFilter(FindNodeResponse.class)).setConsumable(true).setCallback(to, this)
+		.send(to, findNodeRequest);
+	}
+
+	private void sortKnownClosestNodes() {
+		this.knownClosestNodes = sort(this.knownClosestNodes, on(Node.class).getKey(), this.keyComparator);
+		if (this.knownClosestNodes.size() >= this.kBucketSize)
+			this.knownClosestNodes.subList(this.kBucketSize, this.knownClosestNodes.size()).clear();
 	}
 
 	@Override
@@ -160,35 +176,52 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 			return nodes;
 		}
 
+		this.keyComparator = new KeyComparator(this.key);
 		this.knownClosestNodes = this.kBuckets.getClosestNodesByKey(this.key, this.kBucketSize);
 		this.knownClosestNodes.add(this.localNode);
 		final Collection<Node> bootstrap = getBootstrap();
 		bootstrap.removeAll(this.knownClosestNodes);
 		this.knownClosestNodes.addAll(bootstrap);
+		sortKnownClosestNodes();
 		this.alreadyQueried.add(this.localNode);
 
 		final KeyComparator keyComparator = new KeyComparator(this.key);
 		this.colorComparator = new KeyColorComparator(this.key, this.nrColors);
 
 		do {
+			final Node node = takeColorUnqueried();
+
 			synchronized (this) {
-				this.knownClosestNodes = sort(this.knownClosestNodes, on(Node.class).getKey(), keyComparator);
-				if (this.knownClosestNodes.size() >= this.kBucketSize)
-					this.knownClosestNodes.subList(this.kBucketSize, this.knownClosestNodes.size()).clear();
-
-				if (this.returnedCachedResults != null)
+				// check if finished already
+				if (!hasMoreToQuery() || this.returnedCachedResults != null)
 					break;
 
-				if (!hasMoreToQuery())
-					break;
-			}
-
-			final Node n = takeColorUnqueried();
-
-			if (n != null)
-				sendFindNode(n);
-			else
-				synchronized (this) {
+				if (node != null){
+					if(!trySendFindNode(node)){
+						try {
+							if(this.querying.size() == 1)
+							{
+								//If only I try to send I send and block
+								this.nrMsgsSent.incrementAndGet();
+								sendFindNode(node);
+							}
+							else
+							{
+								//If there are pending msgs, i wait for their reply
+								this.querying.remove(node);
+								wait();
+							}
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+					else
+					{
+						this.nrMsgsSent.incrementAndGet();
+					}
+				}
+				else
+				{
 					if (!this.querying.isEmpty())
 						try {
 							wait();
@@ -196,7 +229,7 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 							e.printStackTrace();
 						}
 				}
-
+			}
 		} while (true);
 
 		this.knownClosestNodes = Collections.unmodifiableList(this.knownClosestNodes);
@@ -209,13 +242,6 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 
 		if (this.returnedCachedResults != null)
 			this.nrRemoteCacheHits.incrementAndGet();
-		else {
-
-		}
-
-		synchronized (this) {
-			this.nrQueried = this.alreadyQueried.size() + this.querying.size() - 1;
-		}
 
 		return this.knownClosestNodes;
 	}
@@ -251,8 +277,8 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 		nodes.removeAll(this.querying);
 		nodes.removeAll(this.alreadyQueried);
 		nodes.removeAll(this.knownClosestNodes);
-
 		this.knownClosestNodes.addAll(nodes);
+		sortKnownClosestNodes();
 
 		if (((FindNodeResponse) msg).isCachedResults()) {
 			this.returnedCachedResults = n;
@@ -267,7 +293,6 @@ public class EagerColorFindValueOperation extends FindValueOperation implements 
 			if (this.lastSentTo.size() > this.nrShare)
 				this.lastSentTo.remove(0);
 		}
-
 	}
 
 	@Override
