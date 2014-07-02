@@ -1,0 +1,39 @@
+*.class
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# Project files
+.idea/
+*.iml
+
+# Output
+target/
+build/
+generated-sources/
+gen-external-apklibs/
+
+# Documentation
+doc/
+
+# Gradle
+.gradle/
+local.properties
+
+.DS_Store
+
+# Maven release plugin stuff
+android/release.properties
+release.properties
+*.releaseBackup
+
+# Merge tool stuff
+*.orig
